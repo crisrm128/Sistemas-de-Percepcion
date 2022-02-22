@@ -33,8 +33,18 @@ def draw(img, corners, imgpts):
 
     return img
 
-for fname in glob.glob('*.jpg'):
-    img = cv.imread(fname)
+cap = cv.VideoCapture(0)
+
+if (cap.isOpened()== False): 
+  print("Error opening video  file")
+
+while(cap.isOpened()):
+
+    ret, img = cap.read()
+    if ret == False:
+        break
+
+    #img = cv.imread(fname)
     gray = cv.cvtColor(img,cv.COLOR_BGR2GRAY)
     ret, corners = cv.findChessboardCorners(gray, (9,6),None)
     if ret == True:
@@ -46,7 +56,10 @@ for fname in glob.glob('*.jpg'):
         imgpts, jac = cv.projectPoints(axis, rvecs, tvecs, mtx, dist)
         img = draw(img,corners2,imgpts)
         cv.imshow('img',img)
-        k = cv.waitKey(0) & 0xFF
-        if k == ord('s'):
-            cv.imwrite(fname[:6]+'.png', img)
+    
+    cv.imshow('img',img)
+    if cv.waitKey(25) & 0xFF == ord('q'):
+        break
+
+cap.release()
 cv.destroyAllWindows()
