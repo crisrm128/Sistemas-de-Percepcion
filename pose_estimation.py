@@ -12,8 +12,7 @@ criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(8,5,0)
 objp = np.zeros((6*9,3), np.float32)
 objp[:,:2] = np.mgrid[0:9,0:6].T.reshape(-1,2)
-
-axis = np.float32([[4,2,-2], [6,2,-2], [4,2,-4], [6,2,-4], [3,2,-2], [7,2,-2], [5,2,-4], [5,2,-5]]).reshape(-1,3)
+axis = np.float32([[4,2,-2], [6,2,-2], [4,2,-4], [6,2,-4], [3,2,-2], [7,2,-2], [5,2,-4], [5,2,-4.7]]).reshape(-1,3)
 
 def draw(img, corners, imgpts):
     corner1 = tuple(corners[21].ravel())
@@ -28,8 +27,18 @@ def draw(img, corners, imgpts):
     img = cv.line(img, tuple(imgpts[2].ravel()), tuple(imgpts[4].ravel()), (0,0,255), 5)
     img = cv.line(img, tuple(imgpts[3].ravel()), tuple(imgpts[5].ravel()), (0,0,255), 5)
     img = cv.line(img, tuple(imgpts[6].ravel()), tuple(imgpts[7].ravel()), (0,0,255), 5)
-    #img = cv.line(img, corner, tuple(imgpts[2].ravel()), (0,0,255), 5)
-    #img = cv.line(img, corner, tuple(imgpts[3].ravel()), (0,255,255), 5)
+    # Using cv2.circle() method
+    tam = imgpts[3].ravel() - imgpts[2].ravel()
+    tam = abs(tam[0])
+    tam = int(tam/3)
+
+    t =  tuple(map(lambda i, j: i - j, tuple(imgpts[7].ravel()), (0, tam/3 + tam/4)))
+    t1 = t[0]
+    t2 = t[1]
+    t = (int(t1), int(t2))
+
+    #print(t)
+    img = cv.circle(img, t, tam, (0, 0, 255), 5)
 
     return img
 
