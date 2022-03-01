@@ -68,38 +68,38 @@ def draw(img, corners, imgpts):
     origin2 = (int(origin2[0]), int(origin2[1]))
     
     imgpts1 = tuple(imgpts[0].ravel())
-    result = tuple(tuple(map(int, imgpts1))) 
+    pierna_izq = tuple(tuple(map(int, imgpts1))) 
     
     imgpts2 = tuple(imgpts[1].ravel())
-    result2 = tuple(tuple(map(int, imgpts2))) 
+    pierna_der = tuple(tuple(map(int, imgpts2))) 
     
     imgpts3 = tuple(imgpts[2].ravel())
-    result3 = tuple(tuple(map(int, imgpts3))) 
+    cuerpo_izq = tuple(tuple(map(int, imgpts3))) 
 
     imgpts4 = tuple(imgpts[3].ravel())
-    result4 = tuple(tuple(map(int, imgpts4))) 
+    cuerpo_der = tuple(tuple(map(int, imgpts4))) 
 
     imgpts5 = tuple(imgpts[4].ravel())
-    result5 = tuple(tuple(map(int, imgpts5))) 
+    brazo_izq = tuple(tuple(map(int, imgpts5))) 
 
     imgpts6 = tuple(imgpts[5].ravel())
-    result6 = tuple(tuple(map(int, imgpts6))) 
+    brazo_der = tuple(tuple(map(int, imgpts6))) 
 
     imgpts7 = tuple(imgpts[6].ravel())
-    result7 = tuple(tuple(map(int, imgpts7))) 
+    base_cuello = tuple(tuple(map(int, imgpts7))) 
 
     imgpts8 = tuple(imgpts[7].ravel())
-    result8 = tuple(tuple(map(int, imgpts8))) 
+    fin_cuello = tuple(tuple(map(int, imgpts8))) 
     
-    img = cv.line(img, origin, result, (255,0,0), 5) #Pierna izq
-    img = cv.line(img, origin2, result2, (255,0,0), 5) #Pierna der
-    img = cv.line(img, result, result2, (255,0,0), 5) #Entrepierna
-    img = cv.line(img, result, result3, (255,0,0), 5) #Lado izq
-    img = cv.line(img, result2, result4, (255,0,0), 5) #Lado der
-    img = cv.line(img, result3, result4, (255,0,0), 5) #Linea sup
-    img = cv.line(img, result3, result5, (255,0,0), 5) #Linea sup
-    img = cv.line(img, result4, result6, (255,0,0), 5) #Linea sup
-    img = cv.line(img, result7, result8, (255,0,0), 5) #Linea sup
+    img = cv.line(img, origin, pierna_izq, (255,0,0), 5) #Pierna izq
+    img = cv.line(img, origin2, pierna_der, (255,0,0), 5) #Pierna der
+    img = cv.line(img, pierna_izq, pierna_der, (255,0,0), 5) #Entrepierna
+    img = cv.line(img, pierna_izq, cuerpo_izq, (255,0,0), 5) #Cuerpo izq
+    img = cv.line(img, pierna_der, cuerpo_der, (255,0,0), 5) #Cuerpo der
+    img = cv.line(img, cuerpo_izq, cuerpo_der, (255,0,0), 5) #Entrehombros
+    img = cv.line(img, cuerpo_izq, brazo_izq, (255,0,0), 5) #Brazo izq
+    img = cv.line(img, cuerpo_der, brazo_der, (255,0,0), 5) #Brazo der
+    img = cv.line(img, base_cuello, fin_cuello, (255,0,0), 5) #Cuello
 
     # Using cv2.circle() method
     tam = imgpts[4].ravel() - imgpts[3].ravel()
@@ -111,7 +111,7 @@ def draw(img, corners, imgpts):
     t2 = t[1]
     t = (int(t1), int(t2))
 
-    #print(t)
+    #HEAD
     img = cv.circle(img, t, tam, (255, 0, 0), 5)
 
     return img

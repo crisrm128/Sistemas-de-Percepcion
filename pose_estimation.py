@@ -18,15 +18,15 @@ def draw(img, corners, imgpts):
     corner1 = tuple(corners[21].ravel())
     corner2 = tuple(corners[25].ravel())
 
-    img = cv.line(img, corner1, tuple(imgpts[0].ravel()), (0,0,255), 5)
-    img = cv.line(img, corner2, tuple(imgpts[1].ravel()), (0,0,255), 5)
-    img = cv.line(img, tuple(imgpts[0].ravel()), tuple(imgpts[1].ravel()), (0,0,255), 5)
-    img = cv.line(img, tuple(imgpts[0].ravel()), tuple(imgpts[2].ravel()), (0,0,255), 5)
-    img = cv.line(img, tuple(imgpts[1].ravel()), tuple(imgpts[3].ravel()), (0,0,255), 5)
-    img = cv.line(img, tuple(imgpts[2].ravel()), tuple(imgpts[3].ravel()), (0,0,255), 5)
-    img = cv.line(img, tuple(imgpts[2].ravel()), tuple(imgpts[4].ravel()), (0,0,255), 5)
-    img = cv.line(img, tuple(imgpts[3].ravel()), tuple(imgpts[5].ravel()), (0,0,255), 5)
-    img = cv.line(img, tuple(imgpts[6].ravel()), tuple(imgpts[7].ravel()), (0,0,255), 5)
+    img = cv.line(img, corner1, tuple(imgpts[0].ravel()), (0,0,255), 5)                     #Pierna izq
+    img = cv.line(img, corner2, tuple(imgpts[1].ravel()), (0,0,255), 5)                     #Pierna der
+    img = cv.line(img, tuple(imgpts[0].ravel()), tuple(imgpts[1].ravel()), (0,0,255), 5)    #Entrepierna
+    img = cv.line(img, tuple(imgpts[0].ravel()), tuple(imgpts[2].ravel()), (0,0,255), 5)    #Cuerpo izq
+    img = cv.line(img, tuple(imgpts[1].ravel()), tuple(imgpts[3].ravel()), (0,0,255), 5)    #Cuerpo der
+    img = cv.line(img, tuple(imgpts[2].ravel()), tuple(imgpts[3].ravel()), (0,0,255), 5)    #Entrehombros
+    img = cv.line(img, tuple(imgpts[2].ravel()), tuple(imgpts[4].ravel()), (0,0,255), 5)    #Brazo izq
+    img = cv.line(img, tuple(imgpts[3].ravel()), tuple(imgpts[5].ravel()), (0,0,255), 5)    #Brazo der
+    img = cv.line(img, tuple(imgpts[6].ravel()), tuple(imgpts[7].ravel()), (0,0,255), 5)    #Cuello
     # Using cv2.circle() method
     tam = imgpts[3].ravel() - imgpts[2].ravel()
     tam = abs(tam[0])
@@ -37,7 +37,7 @@ def draw(img, corners, imgpts):
     t2 = t[1]
     t = (int(t1), int(t2))
 
-    #print(t)
+    #HEAD
     img = cv.circle(img, t, tam, (0, 0, 255), 5)
 
     return img
