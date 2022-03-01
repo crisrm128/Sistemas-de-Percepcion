@@ -56,11 +56,16 @@ objp[42] = (360, 144, 0)
 objp[43] = (360, 216, 0)
 ###################################################################################################
 
-axis = np.float32([[360,0,0], [0,240,0], [0,0,120]]).reshape(-1,3)
+#Cambiando los valores cambiamos las longitudes de los ejes (ejemplo de eje central).
+#axis = np.float32([[3*72,2*72,0], [2*72,3*72,0], [2*72,2*72,72]]).reshape(-1,3)
+axis = np.float32([[2*72+10,2*72,54], [3*72-10,2*72,54], [2*72+10,2*72,108], [3*72-10,2*72,108],[2*72-10,2*72,54], [3*72+10,2*72,54], [180,2*72,108], [180,2*72,108+18]]).reshape(-1,3)
 
 def draw(img, corners, imgpts):
-    origin = tuple(corners[0].ravel())
+    origin = tuple(corners[18].ravel())
     origin = (int(origin[0]), int(origin[1]))
+
+    origin2 = tuple(corners[26].ravel())
+    origin2 = (int(origin2[0]), int(origin2[1]))
     
     imgpts1 = tuple(imgpts[0].ravel())
     result = tuple(tuple(map(int, imgpts1))) 
@@ -70,15 +75,61 @@ def draw(img, corners, imgpts):
     
     imgpts3 = tuple(imgpts[2].ravel())
     result3 = tuple(tuple(map(int, imgpts3))) 
+
+    imgpts4 = tuple(imgpts[3].ravel())
+    result4 = tuple(tuple(map(int, imgpts4))) 
+
+    imgpts5 = tuple(imgpts[4].ravel())
+    result5 = tuple(tuple(map(int, imgpts5))) 
+
+    imgpts6 = tuple(imgpts[5].ravel())
+    result6 = tuple(tuple(map(int, imgpts6))) 
+
+    imgpts7 = tuple(imgpts[6].ravel())
+    result7 = tuple(tuple(map(int, imgpts7))) 
+
+    imgpts8 = tuple(imgpts[7].ravel())
+    result8 = tuple(tuple(map(int, imgpts8))) 
     
-    img = cv.line(img, origin, result, (255,0,0), 2)
-    img = cv.line(img, origin, result2, (0,255,0), 2)
-    img = cv.line(img, origin, result3, (0,0,255), 2)
+    img = cv.line(img, origin, result, (255,0,0), 5) #Pierna izq
+    img = cv.line(img, origin2, result2, (255,0,0), 5) #Pierna der
+    img = cv.line(img, result, result2, (255,0,0), 5) #Entrepierna
+    img = cv.line(img, result, result3, (255,0,0), 5) #Lado izq
+    img = cv.line(img, result2, result4, (255,0,0), 5) #Lado der
+    img = cv.line(img, result3, result4, (255,0,0), 5) #Linea sup
+    img = cv.line(img, result3, result5, (255,0,0), 5) #Linea sup
+    img = cv.line(img, result4, result6, (255,0,0), 5) #Linea sup
+    img = cv.line(img, result7, result8, (255,0,0), 5) #Linea sup
+
+    # Using cv2.circle() method
+    tam = imgpts[4].ravel() - imgpts[3].ravel()
+    tam = abs(tam[0])
+    tam = int(tam/3)
+
+    t =  tuple(map(lambda i, j: i - j, tuple(imgpts[7].ravel()), (0, tam/3 + tam/4)))
+    t1 = t[0]
+    t2 = t[1]
+    t = (int(t1), int(t2))
+
+    #print(t)
+    img = cv.circle(img, t, tam, (255, 0, 0), 5)
 
     return img
 
-for fname in glob.glob('circle_calibration/*.jpg'):
-    img = cv.imread(fname)
+cap = cv.VideoCapture(0)
+
+
+if (cap.isOpened()== False): 
+  print("Error opening video  file")
+
+while(cap.isOpened()):
+
+    ret, img = cap.read()
+    if ret == False:
+        break
+
+#for fname in glob.glob('circle_calibration/*.jpg'):
+    #img = cv.imread(fname)
     gray = cv.cvtColor(img,cv.COLOR_BGR2GRAY)
     ret, corners = cv.findCirclesGrid(gray, (4,11), None, flags = cv.CALIB_CB_ASYMMETRIC_GRID)   # Find the circle grid
     if ret == True:
@@ -89,8 +140,13 @@ for fname in glob.glob('circle_calibration/*.jpg'):
         # project 3D points to image plane
         imgpts, jac = cv.projectPoints(axis, rvecs, tvecs, mtx, dist)     
         img = draw(img,corners2,imgpts)
-        cv.imshow('img',img)
-        k = cv.waitKey(0) & 0xFF
-        if k == ord('s'):
-            cv.imwrite(fname[:6]+'.png', img)
+        #cv.imshow('img',img)
+        #k = cv.waitKey(0) & 0xFF
+        #if k == ord('s'):
+            #cv.imwrite(fname[:6]+'.png', img)
+    cv.imshow('Vis', img)
+    if cv.waitKey(25) & 0xFF == ord('q'):
+        break
+        
+cap.release()
 cv.destroyAllWindows()
