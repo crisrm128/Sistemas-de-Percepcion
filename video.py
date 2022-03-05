@@ -2,9 +2,16 @@
 import numpy as np
 import cv2 as cv
 import glob
+import math
 
 with np.load('calib_parameteres.npz') as X:
     mtx, dist, _, _ = [X[i] for i in ('mtx','dist','rvecs','tvecs')]
+
+#Variable for movement
+count = 0
+move = 1
+direc = 1
+max_count = 3
 
 # termination criteria
 criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
@@ -13,21 +20,23 @@ criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 objp = np.zeros((6*9,3), np.float32)
 objp[:,:2] = np.mgrid[0:9,0:6].T.reshape(-1,2)
 
-axis = np.float32([[4,2,-2], [6,2,-2], [4,2,-4], [6,2,-4], [3,2,-2], [7,2,-2], [5,2,-4], [5,2,-4.7]]).reshape(-1,3)
+axis = np.float32([[4,2,-2], [6,2,-2], [4,2,-4], [6,2,-4], [4-1.24233,2,-4-1.8592], [7,2,-2], [5,2,-4], [5,2,-4.7]]).reshape(-1,3)
+
+axis_change = [[4-math.sqrt(5),2,-4], [4-1.85922,2,-4-1.2423], [4-1.72854,2,-4-1.4185], [4-math.sqrt(2.5),2,-4-1.5811], [4-1.41855,2,-4-1.7285], [4-1.24233,2,-4-1.8592], [3,2,-6], [4-0.64904,2,-4-2.1398], [3.5,2,-4-math.sqrt(5-pow(0.5,2))]]
 
 def draw(img, corners, imgpts):
     corner1 = tuple(corners[21].ravel())
     corner2 = tuple(corners[25].ravel())
 
-    img = cv.line(img, corner1, tuple(imgpts[0].ravel()), (0,0,255), 5)
-    img = cv.line(img, corner2, tuple(imgpts[1].ravel()), (0,0,255), 5)
-    img = cv.line(img, tuple(imgpts[0].ravel()), tuple(imgpts[1].ravel()), (0,0,255), 5)
-    img = cv.line(img, tuple(imgpts[0].ravel()), tuple(imgpts[2].ravel()), (0,0,255), 5)
-    img = cv.line(img, tuple(imgpts[1].ravel()), tuple(imgpts[3].ravel()), (0,0,255), 5)
-    img = cv.line(img, tuple(imgpts[2].ravel()), tuple(imgpts[3].ravel()), (0,0,255), 5)
-    img = cv.line(img, tuple(imgpts[2].ravel()), tuple(imgpts[4].ravel()), (0,0,255), 5)
-    img = cv.line(img, tuple(imgpts[3].ravel()), tuple(imgpts[5].ravel()), (0,0,255), 5)
-    img = cv.line(img, tuple(imgpts[6].ravel()), tuple(imgpts[7].ravel()), (0,0,255), 5)
+    img = cv.line(img, corner1, tuple(imgpts[0].ravel()), (0,0,255), 5)                     #Pierna izq
+    img = cv.line(img, corner2, tuple(imgpts[1].ravel()), (0,0,255), 5)                     #Pierna der
+    img = cv.line(img, tuple(imgpts[0].ravel()), tuple(imgpts[1].ravel()), (0,0,255), 5)    #Entrepierna
+    img = cv.line(img, tuple(imgpts[0].ravel()), tuple(imgpts[2].ravel()), (0,0,255), 5)    #Cuerpo izq
+    img = cv.line(img, tuple(imgpts[1].ravel()), tuple(imgpts[3].ravel()), (0,0,255), 5)    #Cuerpo der
+    img = cv.line(img, tuple(imgpts[2].ravel()), tuple(imgpts[3].ravel()), (0,0,255), 5)    #Entrehombros
+    img = cv.line(img, tuple(imgpts[2].ravel()), tuple(imgpts[4].ravel()), (0,0,255), 5)    #Brazo der
+    img = cv.line(img, tuple(imgpts[3].ravel()), tuple(imgpts[5].ravel()), (0,0,255), 5)    #Brazo izq
+    img = cv.line(img, tuple(imgpts[6].ravel()), tuple(imgpts[7].ravel()), (0,0,255), 5)    #Cuello
     # Using cv2.circle() method
     tam = imgpts[3].ravel() - imgpts[2].ravel()
     tam = abs(tam[0])
@@ -48,6 +57,7 @@ cap = cv.VideoCapture(0)
 if (cap.isOpened()== False): 
   print("Error opening video  file")
 
+
 while(cap.isOpened()):
 
     ret, img = cap.read()
@@ -58,6 +68,10 @@ while(cap.isOpened()):
     gray = cv.cvtColor(img,cv.COLOR_BGR2GRAY)
     ret, corners = cv.findChessboardCorners(gray, (9,6),None)
     if ret == True:
+        count = count +1
+        
+        axis[4] = axis_change[move]
+        #print(axis_change)
         corners2 = cv.cornerSubPix(gray,corners,(11,11),(-1,-1),criteria)
         # Find the rotation and translation vectors.
 
@@ -66,6 +80,20 @@ while(cap.isOpened()):
         imgpts, jac = cv.projectPoints(axis, rvecs, tvecs, mtx, dist)
         img = draw(img,corners2,imgpts)
         cv.imshow('img',img)
+
+        #print(move, " ", count, " ", direc)
+        if(move == 8 and count == max_count and direc == 1):
+            count  = 0 
+            direc = -1
+
+        if(move == 1 and count == max_count and direc == -1):
+            count  = 0 
+            direc = 1 
+
+        if(count == max_count):
+            move = move + direc
+            count = 0
+
     
     cv.imshow('img',img)
     if cv.waitKey(25) & 0xFF == ord('q'):
