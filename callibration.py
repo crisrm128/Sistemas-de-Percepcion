@@ -102,5 +102,5 @@ for resols in resolutions:
     writer.writerow(data)
     f.close()
 
-    np.savez('calib_parameteres.npz', **calib_info) 
+np.savez('calib_parameteres.npz', **calib_info) 
 
