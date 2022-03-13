@@ -42,7 +42,7 @@ def draw(img, corners, imgpts):
 
     return img
 
-for fname in glob.glob('*.jpg'):
+for fname in glob.glob('Callibration_frames3/*.jpg'):
     img = cv.imread(fname)
     gray = cv.cvtColor(img,cv.COLOR_BGR2GRAY)
     ret, corners = cv.findChessboardCorners(gray, (9,6),None)
@@ -55,7 +55,8 @@ for fname in glob.glob('*.jpg'):
         imgpts, jac = cv.projectPoints(axis, rvecs, tvecs, mtx, dist)
         img = draw(img,corners2,imgpts)
         cv.imshow('img',img)
-        k = cv.waitKey(0) & 0xFF
-        if k == ord('s'):
-            cv.imwrite(fname[:6]+'.png', img)
+        #k = cv.waitKey(0) & 0xFF
+        #if k == ord('s'):
+        #    cv.imwrite(fname[:6]+'.png', img)
+        cv.waitKey(500)
 cv.destroyAllWindows()
