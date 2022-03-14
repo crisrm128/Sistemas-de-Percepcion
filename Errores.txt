@@ -1,0 +1,31 @@
+ERRORES DE REPROYECCIÓN (WEBCAM):
+
+Tablero de ajedrez (ambas con 11 imágenes):
+
+Imágenes de casa (640x480): 'mean_error': 0.08935389847736831
+
+Imágenes de clase (640x360): 'mean_error': 0.04133109445697315
+
+
+
+Círculos asimétricos (todas con fotos de casa):
+
+Con fotos antiguas: 'mean_error': 0.06277064963077984 (total 12 fotos)
+
+Con nuevas fotos (más horizontales): 'mean_error': 0.10283033468840147 (total 16 fotos)
+
+Con ambos conjuntos de fotos: 'mean_error': 0.08585262020096036 (total 28 fotos)
+
+
+
+Charucos:
+
+Imágenes en casa (1080x720) (11 img): 'mean_error': 0.005138852078037449
+
+Imágenes en casa (640x480) (11 img): 'mean_error': 0.005227527163840705 
+
+Imágenes de tablet (640x480) (14 img):  'mean_error': 0.005462890373704277
+
+Imágenes en clase  (640x480) (12 img): 'mean_error': 0.0055514661053052364
+
+Imágenes en clase (1280x720) (12 img):  'mean_error': 0.004095553006924133
