@@ -42,8 +42,9 @@ def draw(img, corners, imgpts):
 
     return img
 
-for fname in glob.glob('Callibration_frames3/*.jpg'):
+for fname in glob.glob('Fotos_movil_chess/*.jpg'):
     img = cv.imread(fname)
+    img = cv.resize(img,tuple(np.array([1280,720])))
     gray = cv.cvtColor(img,cv.COLOR_BGR2GRAY)
     ret, corners = cv.findChessboardCorners(gray, (9,6),None)
     if ret == True:

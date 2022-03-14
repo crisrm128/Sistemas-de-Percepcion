@@ -65,6 +65,7 @@ while(cap.isOpened()):
         break
 
     #img = cv.imread(fname)
+    img = cv.resize(img,tuple(np.array([1280,720])))
     gray = cv.cvtColor(img,cv.COLOR_BGR2GRAY)
     ret, corners = cv.findChessboardCorners(gray, (9,6),None)
     if ret == True:

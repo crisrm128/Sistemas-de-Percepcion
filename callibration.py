@@ -45,7 +45,7 @@ for resols in resolutions:
     objpoints = [] # 3d point in real world space
     imgpoints = [] # 2d points in image plane.
 
-    images = glob.glob('Callibration_frames3/*.jpg')
+    images = glob.glob('Fotos_movil_chess/*.jpg')
 
     for fname in images:
         img = cv.imread(fname)

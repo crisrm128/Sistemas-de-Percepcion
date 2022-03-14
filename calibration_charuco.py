@@ -29,7 +29,7 @@ image_size = None # Determined at runtime
 # I'm using a set of images taken with the camera with the naming convention:
 # 'camera-pic-of-charucoboard-<NUMBER>.jpg'
 # All images used should be the same size, which if taken with the same camera shouldn't be a problem
-images = glob.glob('charuco_frames_2/*.jpg')
+images = glob.glob('callibration_frames_2/*.jpg')
 
 # Loop through images glob'ed
 for iname in images:
@@ -77,7 +77,7 @@ for iname in images:
         #img = cv2.resize(img, (int(img.shape[1]/proportion), int(img.shape[0]/proportion)))
         # Pause to display each image, waiting for key press
         cv2.imshow('Charuco board', img)
-        cv2.waitKey(0)
+        cv2.waitKey(500)
     else:
         print("Not able to detect a charuco board in image: {}".format(iname))
 

@@ -87,7 +87,7 @@ for resols in resolutions:
 
 
     # Conjunto de imágenes para calibrar (del mismo tamaño al ser tomadas por la misma cámara)
-    images = glob.glob('cris_charuco_home/*.jpg')
+    images = glob.glob('callibration_frames/*.jpg')
 
     # Para todas las imágenes obtenidas
     for iname in images:
