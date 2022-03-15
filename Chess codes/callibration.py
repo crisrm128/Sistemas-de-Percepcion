@@ -1,6 +1,7 @@
 from cmath import sqrt
 from email import header
 import math
+from cv2 import mean
 import numpy as np
 import cv2 as cv
 import glob
@@ -32,7 +33,7 @@ objp[:,:2] = np.mgrid[0:9,0:6].T.reshape(-1,2)
 objpoints = [] # 3d point in real world space
 imgpoints = [] # 2d points in image plane.
 
-images = glob.glob('Fotos_movil_chess/*.jpg')
+images = glob.glob('cris_chessboard_class/*.jpg')
 
 for fname in images:
     img = cv.imread(fname)
@@ -76,6 +77,9 @@ mean_error = mean_error/len(objpoints)
 
 res = sqrt(math.pow(1280,2) + math.pow(720,2))
 mean_error = mean_error/res
+mean_error = mean_error.real
+
+mean_error = "{:.8f}".format(float(mean_error))
 
 calib_info = dict = {'mtx':mtx, 'dist':dist,'rvecs':rvecs,'tvecs':tvecs,'mean_error':mean_error}
 

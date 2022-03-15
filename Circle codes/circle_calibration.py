@@ -109,6 +109,7 @@ for i in range(len(objpoints)):
         mean_error += error
 mean_error = mean_error/len(objpoints)
 
+
 #Me guardo todos los parámetros de la calibración.
 calib_info = dict = {'mtx':mtx, 'dist':dist,'rvecs':rvecs,'tvecs':tvecs,'mean_error':mean_error}
 

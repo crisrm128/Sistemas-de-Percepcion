@@ -158,10 +158,11 @@ for resols in resolutions:
         res = sqrt(math.pow(resols[0],2) + math.pow(resols[1],2))
         normal = mean_error/res
 
-        data = [format(normal, '.8f'), format(res, '.8f')]
+        #data = [format(normal, '.8f'), format(res, '.8f')]
 
+        data = ["{:.8f}".format(float(normal.real)), "{:.8f}".format(float(res.real))]
 
-        f = open('csv_circle_file.csv', 'a')
+        f = open('circle.csv', 'a')
         writer = csv.writer(f)
         writer.writerow(data)
         f.close()

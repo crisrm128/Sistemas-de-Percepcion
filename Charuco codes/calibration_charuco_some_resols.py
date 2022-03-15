@@ -24,7 +24,7 @@ resol11 = np.array([1280,720])
 resolutions = np.array([resol1, resol2, resol3, resol4, resol5, resol6, resol7,resol8,resol9,resol10,resol11])
 
 header = ['Normalized_error', 'Resolution']
-f = open('csv_charuco_file.csv', 'w')
+f = open('charuco.csv', 'w')
 writer = csv.writer(f)
 writer.writerow(header)
 f.close()
@@ -186,7 +186,6 @@ for resols in resolutions:
     # Imprimir matriz de parametros intrinsecos y coeficientes de distorsion
     print(cameraMatrix)
     print(distCoeffs)
-    print(calibration)
 
     #cv2.imshow('Vis', img)
     #cv2.waitKey(0)
@@ -200,10 +199,11 @@ for resols in resolutions:
     normal = mean_error/res
     mean_error = normal
 
-    data = [format(normal, '.8f'), format(res, '.8f')]
+    #data = [format(normal, '.8f'), format(res, '.8f')]
 
+    data = ["{:.8f}".format(float(normal.real)), "{:.8f}".format(float(res.real))]
 
-    f = open('csv_charuco_file.csv', 'a')
+    f = open('charuco.csv', 'a')
     writer = csv.writer(f)
     writer.writerow(data)
     f.close()
@@ -211,5 +211,5 @@ for resols in resolutions:
 np.savez('calib_charuco_parameters.npz', **calib_info)  # data is a dict here
         
 # Imprimir por consola que la calibración se ha llevado a cabo correctamente
-print( "total error: {}".format(mean_error) )
+print( "total error: {}".format(normal) )
 print("Calibration",calib_info)
