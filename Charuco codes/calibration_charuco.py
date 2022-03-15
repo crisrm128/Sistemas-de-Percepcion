@@ -29,12 +29,14 @@ image_size = None # Determined at runtime
 # I'm using a set of images taken with the camera with the naming convention:
 # 'camera-pic-of-charucoboard-<NUMBER>.jpg'
 # All images used should be the same size, which if taken with the same camera shouldn't be a problem
-images = glob.glob('callibration_frames_2/*.jpg')
+images = glob.glob('Fotos_movil_charuco/*.jpg')
 
 # Loop through images glob'ed
 for iname in images:
     # Open the image
     img = cv2.imread(iname)
+    #Resize
+    img = cv2.resize(img,tuple(np.array([1280,720])))
     # Grayscale the image
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
@@ -113,8 +115,8 @@ calibration, cameraMatrix, distCoeffs, rvecs, tvecs = aruco.calibrateCameraCharu
 print(cameraMatrix)
 print(distCoeffs)
 
-cv2.imshow('Vis', img)
-cv2.waitKey(0)
+#cv2.imshow('Vis', img)
+#cv2.waitKey(0)
     
 # Save values to be used where matrix+dist is required, for instance for posture estimation
 # I save files in a pickle file, but you can use yaml or whatever works for you

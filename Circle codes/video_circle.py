@@ -102,7 +102,7 @@ def draw(img, corners, imgpts):
     img = cv.line(img, base_cuello, fin_cuello, (255,0,0), 5) #Cuello
 
     # Using cv2.circle() method
-    tam = imgpts[4].ravel() - imgpts[3].ravel()
+    tam = imgpts[3].ravel() - imgpts[2].ravel()
     tam = abs(tam[0])
     tam = int(tam/3)
 
@@ -117,7 +117,7 @@ def draw(img, corners, imgpts):
     return img
 
 cap = cv.VideoCapture(0)
-
+#cap = cv.VideoCapture("http://192.168.31.177:8080/video")
 
 if (cap.isOpened()== False): 
   print("Error opening video  file")
