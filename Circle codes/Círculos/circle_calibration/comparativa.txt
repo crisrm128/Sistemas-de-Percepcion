@@ -1,3 +1,0 @@
-Con fotos antiguas: 'mean_error': 0.06277064963077984 (total 12 fotos)
-Con nuevas fotos (más horizontales): 'mean_error': 0.10283033468840147 (total 16 fotos)
-Con ambos conjuntos de fotos: 'mean_error': 0.08585262020096036 (total 28 fotos)

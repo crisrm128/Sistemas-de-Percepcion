@@ -1,7 +1,0 @@
-Cambiamos el 7*6 por 9*6 esquinas -> 2 vectores no tenían el mismo número de puntos
-
-También cambiamo sen pkl por npz porque funciona con numpy y es más sencillo para el ejemplo que encontramos.
-
-Entendimos que: axis->Posicion del punto a proyectar
-		sistema de coordenadas que empieza en 0 desde la esquina superior izquierda.
-		corners son puntos 2D en tablero fijados (no tienen z)

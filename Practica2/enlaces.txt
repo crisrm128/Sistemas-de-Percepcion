@@ -1,0 +1,6 @@
+http://www.open3d.org/docs/0.12.0/tutorial/geometry/iss_keypoint_detector.html
+
+
+http://www.open3d.org/docs/latest/tutorial/geometry/pointcloud.html
+
+http://www.open3d.org/docs/0.12.0/tutorial/pipelines/global_registration.html#Extract-geometric-feature
