@@ -20,30 +20,20 @@ def draw_registration_result(source, target, transformation):
                                       lookat=[1.9892, 2.0208, 1.8945],
                                       up=[-0.2779, -0.9482, 0.1556])
 
+def preprocess_point_cloud(pcd, voxel_size):
+    #print(":: Downsample with a voxel size %.3f." % voxel_size)
 
-#def get_keypopints_iss_source(pcd):
+    shape_pre = np.array(pcd.points).shape
+    pre_points = shape_pre[0]
 
-#    pcd_keypoints = o3d.geometry.keypoint.compute_iss_keypoints(pcd,
- #                                                       salient_radius=0.004,
- #                                                       non_max_radius=0.006,
- #                                                       gamma_21=0.5,
- #                                                       gamma_32=0.7)
+    start = time.time()
+    pcd_down = pcd.voxel_down_sample(voxel_size)
+    #pcd_down = pcd.uniform_down_sample(every_k_points=5)
+    end = time.time()
+    time_filter = end-start
 
-
-#    return pcd_keypoints
-
-def get_keypopints_iss_target(pcd):
-
-    pcd_keypoints = o3d.geometry.keypoint.compute_iss_keypoints(pcd,
-                                                        salient_radius=0.004,
-                                                        non_max_radius=0.006,
-                                                        gamma_21=0.5,
-                                                        gamma_32=0.7)
-
-
-    return pcd_keypoints
-
-def get_features_fpfh(pcd_down,voxel_size): #Pasas la lista de keypoints como pcd_down y tamaño de voxel
+    shape_post = np.array(pcd_down.points).shape
+    post_points = shape_post[0]
 
     start = time.time()
     radius_normal = voxel_size * 3
@@ -62,27 +52,7 @@ def get_features_fpfh(pcd_down,voxel_size): #Pasas la lista de keypoints como pc
 
     end = time.time()
     time_keypoints = end-start
-
-
-    return pcd_down, pcd_fpfh, time_keypoints, points_kp
-
-def filtering(pcd,voxel_size):
-    #print(":: Downsample with a voxel size %.3f." % voxel_size)
-
-    shape_pre = np.array(pcd.points).shape
-    pre_points = shape_pre[0]
-
-    start = time.time()
-    pcd_down = pcd.voxel_down_sample(voxel_size)
-    #pcd_down = pcd.uniform_down_sample(every_k_points=5)
-    end = time.time()
-    time_filter = end-start
-
-    shape_post = np.array(pcd_down.points).shape
-    post_points = shape_post[0]
-
-
-    return pcd_down, pre_points, post_points, time_filter
+    return pcd_down, pcd_fpfh, pre_points, post_points, time_filter, time_keypoints, points_kp
 
 def prepare_dataset(voxel_size,pcd4,object):
     #print(":: Load two point clouds and disturb initial pose.")
@@ -91,40 +61,31 @@ def prepare_dataset(voxel_size,pcd4,object):
 
     #draw_registration_result(source, target, np.identity(4))
 
-    source, pre_source_points, post_source_points, time_source_filter = filtering(source, voxel_size)
-    o3d.visualization.draw_geometries([source])
-    target,  pre_target_points, post_target_points,time_target_filter = filtering(target, voxel_size)
-    o3d.visualization.draw_geometries([target])
-    source_keypoints = get_keypopints_iss_target(source)
-    o3d.visualization.draw_geometries([source_keypoints])
-    target_keypoints = get_keypopints_iss_target(target)
-    o3d.visualization.draw_geometries([target_keypoints])
-
-    source_down, source_fpfh, source_time_keypoints, source_points_kp = get_features_fpfh(source,voxel_size)
-    target_down, target_fpfh, target_time_keypoints, target_points_kp = get_features_fpfh(target,voxel_size)
+    source_down, source_fpfh, pre_source_points, post_source_points, time_source_filter, time_source_keypoints, points_source_kp = preprocess_point_cloud(source, voxel_size)
+    target_down, target_fpfh, pre_target_points, post_target_points,time_target_filter, time_target_keypoints, points_target_kp = preprocess_point_cloud(target, voxel_size)
 
     global total_time
-    #total_time = total_time + (time_source_filter) + (time_target_filter)
+    total_time = total_time + (time_source_filter) + (time_target_filter)
     global one
     if(one==0):
         one = 1
-    #    print(f"Points of scene before filter: {pre_target_points}; Points of scene after filter: {post_target_points}.")
-    #    print(f"Time for filter of scene: {time_source_filter}.")
+        print(f"Points of scene before filter: {pre_target_points}; Points of scene after filter: {post_target_points}.")
+        print(f"Time for filter of scene: {time_source_filter}.")
         print("")
-        #print(f"Keypoints of scene: {points_source_kp}.")
-        #print(f"Time for keypoints of scene: {time_source_keypoints}.")
+        print(f"Keypoints of scene: {points_source_kp}.")
+        print(f"Time for keypoints of scene: {time_source_keypoints}.")
 
-    #print(f"Ponts of {object} before filter: {pre_source_points}; Points of {object} after filter: {post_source_points}.")
-    #print(f"Time for filter of {object}: {time_target_filter}.")
+    print(f"Ponts of {object} before filter: {pre_source_points}; Points of {object} after filter: {post_source_points}.")
+    print(f"Time for filter of {object}: {time_target_filter}.")
     print("")
-    #print(f"Keypoints of {object}: {points_target_kp}.")
-    #print(f"Time for keypoints of {object}: {time_target_keypoints}.")
+    print(f"Keypoints of {object}: {points_target_kp}.")
+    print(f"Time for keypoints of {object}: {time_target_keypoints}.")
 
     return source, target, source_down, target_down, source_fpfh, target_fpfh, total_time
 
 def execute_global_registration(source_down, target_down, source_fpfh,
                                 target_fpfh, voxel_size):
-    distance_threshold = voxel_size * 10
+    distance_threshold = voxel_size * 1.5
     #print(":: RANSAC registration on downsampled point clouds.")
     #print("   Since the downsampling voxel size is %.3f," % voxel_size)
     #print("   we use a liberal distance threshold %.3f." % distance_threshold)
@@ -254,7 +215,7 @@ print(f"Tiempo plano fondo: {time1}; Timepo plano lateral: {time2}; Tiempo plano
 
 #FILTRADO - KEYPOINTS - CALCULO DE NORMALES - MATCHING
 
-voxel_size = 0.002  # means 1cm for this dataset
+voxel_size = 0.01  # means 1cm for this dataset
 [source, target, source_down, target_down, source_fpfh, target_fpfh, total_time] = prepare_dataset(voxel_size,pcd4,"clouds/objects/s0_piggybank_corr.pcd")
 
 result_ransac = execute_global_registration(source_down, target_down,
@@ -264,7 +225,7 @@ result_ransac = execute_global_registration(source_down, target_down,
 draw_registration_result(source_down, pcd, result_ransac.transformation)
 
 
-voxel_size = 0.002  # means cm for this dataset
+voxel_size = 0.01  # means cm for this dataset
 [source, target, source_down, target_down, source_fpfh, target_fpfh,total_time] = prepare_dataset(voxel_size,pcd4,"clouds/objects/s0_plant_corr.pcd")
 
 result_ransac = execute_global_registration(source_down, target_down,
@@ -273,7 +234,7 @@ result_ransac = execute_global_registration(source_down, target_down,
 #print(result_ransac)
 draw_registration_result(source_down, pcd, result_ransac.transformation)
 
-voxel_size = 0.002  # means 8mm for this dataset
+voxel_size = 0.008  # means 8mm for this dataset
 [source, target, source_down, target_down, source_fpfh, target_fpfh,total_time] = prepare_dataset(voxel_size,pcd4,"clouds/objects/s0_mug_corr.pcd")
 
 result_ransac = execute_global_registration(source_down, target_down,
@@ -282,7 +243,7 @@ result_ransac = execute_global_registration(source_down, target_down,
 #print(result_ransac)
 draw_registration_result(source_down, pcd, result_ransac.transformation)
 
-voxel_size = 0.002  # means 8mm for this dataset
+voxel_size = 0.008  # means 8mm for this dataset
 [source, target, source_down, target_down, source_fpfh, target_fpfh,total_time] = prepare_dataset(voxel_size,pcd4,"clouds/objects/s0_plc_corr.pcd")
 
 result_ransac = execute_global_registration(source_down, target_down,
