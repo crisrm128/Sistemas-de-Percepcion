@@ -8,6 +8,10 @@ import time
 
 one = 0
 total_time = 0
+
+#---------------------------------------------- DIBUJAR RESULTADO ---------------------------------------------------
+
+
 def draw_registration_result(source, target, transformation):
     source_temp = copy.deepcopy(source)
     target_temp = copy.deepcopy(target)
@@ -21,6 +25,10 @@ def draw_registration_result(source, target, transformation):
                                       up=[-0.2779, -0.9482, 0.1556])
 
 
+
+#-------------------------------------------------- KEYPOINTS --------------------------------------------------------
+
+
 #def get_keypopints_iss_source(pcd):
 
 #    pcd_keypoints = o3d.geometry.keypoint.compute_iss_keypoints(pcd,
@@ -31,6 +39,7 @@ def draw_registration_result(source, target, transformation):
 
 
 #    return pcd_keypoints
+
 
 def get_keypopints_iss_target(pcd):
 
@@ -43,7 +52,9 @@ def get_keypopints_iss_target(pcd):
 
     return pcd_keypoints
 
-def get_features_fpfh(pcd_down,voxel_size): #Pasas la lista de keypoints como pcd_down y tamaño de voxel
+#-------------------------------------------------- DESCRIPTORES -----------------------------------------------------
+
+def get_features_fpfh(pcd_down,pcd_keypoints,voxel_size): #Pasas la lista de keypoints como pcd_down y tamaño de voxel
 
     start = time.time()
     radius_normal = voxel_size * 3
@@ -51,10 +62,25 @@ def get_features_fpfh(pcd_down,voxel_size): #Pasas la lista de keypoints como pc
     pcd_down.estimate_normals(
         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))
 
+    #print(pcd_down.normals.shape)
+
+    #kp_normals = np.zeros(np.array(pcd_keypoints.points).shape[0])
+    # From numpy to Open3D
+    #pcd_keypoints.normals = open3d.utility.Vector3dVector(kp_normals)
+
+    #print(np.array(pcd_keypoints.points).shape[0])
+    #print(np.array(pcd_down.points).shape[0])
+
+    for i in range(np.array(pcd_down.points).shape[0]):
+        for j in range(np.array(pcd_keypoints.points).shape[0]):
+            if pcd_down.points[i][0] == pcd_keypoints.points[j][0] and pcd_down.points[i][1] == pcd_keypoints.points[j][1] and pcd_down.points[i][2] == pcd_keypoints.points[j][2]:
+                pcd_keypoints.normals.insert(j, pcd_down.normals[i])
+                #print(np.array(pcd_keypoints.normals).shape)              
+
     radius_feature = voxel_size * 5
     #print(":: Compute FPFH feature with search radius %.3f." % radius_feature)
     pcd_fpfh = o3d.pipelines.registration.compute_fpfh_feature(
-        pcd_down,
+        pcd_keypoints,
         o3d.geometry.KDTreeSearchParamHybrid(radius=radius_feature, max_nn=100))
 
     shape_kp = np.array(pcd_fpfh)
@@ -64,7 +90,10 @@ def get_features_fpfh(pcd_down,voxel_size): #Pasas la lista de keypoints como pc
     time_keypoints = end-start
 
 
-    return pcd_down, pcd_fpfh, time_keypoints, points_kp
+    return pcd_keypoints, pcd_fpfh, time_keypoints, points_kp
+
+#-------------------------------------------------- FILTRADO --------------------------------------------------------
+
 
 def filtering(pcd,voxel_size):
     #print(":: Downsample with a voxel size %.3f." % voxel_size)
@@ -84,6 +113,8 @@ def filtering(pcd,voxel_size):
 
     return pcd_down, pre_points, post_points, time_filter
 
+#--------------------------------------------------------------------------------------------------------------------
+
 def prepare_dataset(voxel_size,pcd4,object):
     #print(":: Load two point clouds and disturb initial pose.")
     source = o3d.io.read_point_cloud(object)
@@ -100,8 +131,10 @@ def prepare_dataset(voxel_size,pcd4,object):
     target_keypoints = get_keypopints_iss_target(target)
     o3d.visualization.draw_geometries([target_keypoints])
 
-    source_down, source_fpfh, source_time_keypoints, source_points_kp = get_features_fpfh(source,voxel_size)
-    target_down, target_fpfh, target_time_keypoints, target_points_kp = get_features_fpfh(target,voxel_size)
+    source_down, source_fpfh, source_time_keypoints, source_points_kp = get_features_fpfh(source,source_keypoints,voxel_size)
+    target_down, target_fpfh, target_time_keypoints, target_points_kp = get_features_fpfh(target,target_keypoints,voxel_size)
+
+    #print("Descriptores terminados")
 
     global total_time
     #total_time = total_time + (time_source_filter) + (time_target_filter)
@@ -121,6 +154,8 @@ def prepare_dataset(voxel_size,pcd4,object):
     #print(f"Time for keypoints of {object}: {time_target_keypoints}.")
 
     return source, target, source_down, target_down, source_fpfh, target_fpfh, total_time
+
+#--------------------------------------------------------------------------------------------------------------------
 
 def execute_global_registration(source_down, target_down, source_fpfh,
                                 target_fpfh, voxel_size):
