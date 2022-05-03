@@ -54,7 +54,7 @@ def get_keypopints_iss_target(pcd):
 
 #-------------------------------------------------- DESCRIPTORES -----------------------------------------------------
 
-def get_features_fpfh(pcd_down,pcd_keypoints,voxel_size): #Pasas la lista de keypoints como pcd_down y tamaño de voxel
+def get_features_fpfh(pcd_down,pcd_keypoints,voxel_size, object): #Pasas la lista de keypoints como pcd_down y tamaño de voxel
 
     start = time.time()
     radius_normal = voxel_size * 3
@@ -71,17 +71,26 @@ def get_features_fpfh(pcd_down,pcd_keypoints,voxel_size): #Pasas la lista de key
     #print(np.array(pcd_keypoints.points).shape[0])
     #print(np.array(pcd_down.points).shape[0])
 
-    for i in range(np.array(pcd_down.points).shape[0]):
-        for j in range(np.array(pcd_keypoints.points).shape[0]):
-            if pcd_down.points[i][0] == pcd_keypoints.points[j][0] and pcd_down.points[i][1] == pcd_keypoints.points[j][1] and pcd_down.points[i][2] == pcd_keypoints.points[j][2]:
-                pcd_keypoints.normals.insert(j, pcd_down.normals[i])
-                #print(np.array(pcd_keypoints.normals).shape)              
+    if object == "clouds/objects/s0_piggybank_corr.pcd" or object == "clouds/objects/s0_plant_corr.pcd":
 
-    radius_feature = voxel_size * 5
-    #print(":: Compute FPFH feature with search radius %.3f." % radius_feature)
-    pcd_fpfh = o3d.pipelines.registration.compute_fpfh_feature(
-        pcd_keypoints,
-        o3d.geometry.KDTreeSearchParamHybrid(radius=radius_feature, max_nn=100))
+        for i in range(np.array(pcd_down.points).shape[0]):
+            for j in range(np.array(pcd_keypoints.points).shape[0]):
+                if pcd_down.points[i][0] == pcd_keypoints.points[j][0] and pcd_down.points[i][1] == pcd_keypoints.points[j][1] and pcd_down.points[i][2] == pcd_keypoints.points[j][2]:
+                    pcd_keypoints.normals.insert(j, pcd_down.normals[i])
+                    #print(np.array(pcd_keypoints.normals).shape)              
+
+        radius_feature = voxel_size * 5
+        #print(":: Compute FPFH feature with search radius %.3f." % radius_feature)
+        pcd_fpfh = o3d.pipelines.registration.compute_fpfh_feature(
+            pcd_keypoints,
+            o3d.geometry.KDTreeSearchParamHybrid(radius=radius_feature, max_nn=100))
+    
+    else:
+        radius_feature = voxel_size * 10
+        #print(":: Compute FPFH feature with search radius %.3f." % radius_feature)
+        pcd_fpfh = o3d.pipelines.registration.compute_fpfh_feature(
+            pcd_down,
+            o3d.geometry.KDTreeSearchParamHybrid(radius=radius_feature, max_nn=100))
 
     shape_kp = np.array(pcd_fpfh)
     points_kp = shape_kp
@@ -122,6 +131,7 @@ def prepare_dataset(voxel_size,pcd4,object):
 
     #draw_registration_result(source, target, np.identity(4))
 
+    
     source, pre_source_points, post_source_points, time_source_filter = filtering(source, voxel_size)
     o3d.visualization.draw_geometries([source])
     target,  pre_target_points, post_target_points,time_target_filter = filtering(target, voxel_size)
@@ -131,8 +141,9 @@ def prepare_dataset(voxel_size,pcd4,object):
     target_keypoints = get_keypopints_iss_target(target)
     o3d.visualization.draw_geometries([target_keypoints])
 
-    source_down, source_fpfh, source_time_keypoints, source_points_kp = get_features_fpfh(source,source_keypoints,voxel_size)
-    target_down, target_fpfh, target_time_keypoints, target_points_kp = get_features_fpfh(target,target_keypoints,voxel_size)
+    
+    source_down, source_fpfh, source_time_keypoints, source_points_kp = get_features_fpfh(source,source_keypoints,voxel_size, object)
+    target_down, target_fpfh, target_time_keypoints, target_points_kp = get_features_fpfh(target,target_keypoints,voxel_size, object)
 
     #print("Descriptores terminados")
 
@@ -166,14 +177,25 @@ def execute_global_registration(source_down, target_down, source_fpfh,
     result = o3d.pipelines.registration.registration_ransac_based_on_feature_matching(
         source_down, target_down, source_fpfh, target_fpfh, True,
         distance_threshold,
-        o3d.pipelines.registration.TransformationEstimationPointToPoint(False),
-        3, [
+        o3d.pipelines.registration.TransformationEstimationPointToPoint(False), #No hace ICP porque supuestamente global registration ya da buenos resultados, pero se ha añadido despues
+        3, [ #3 es porque son ransac_n puntos aleatorios del objeto para compararlos con la escena
             o3d.pipelines.registration.CorrespondenceCheckerBasedOnEdgeLength(
                 0.9),
             o3d.pipelines.registration.CorrespondenceCheckerBasedOnDistance(
                 distance_threshold)
-        ], o3d.pipelines.registration.RANSACConvergenceCriteria(100000, 0.999))
+        ], o3d.pipelines.registration.RANSACConvergenceCriteria(100000, 0.9)) #Numero de iteraciones para la convergencia y confianza (probabilidad)
     return result
+
+def refine_registration(source, target, source_fpfh, target_fpfh, voxel_size):
+    distance_threshold = voxel_size * 0.4
+    print(":: Point-to-plane ICP registration is applied on original point")
+    print("   clouds to refine the alignment. This time we use a strict")
+    print("   distance threshold %.3f." % distance_threshold)
+    result = o3d.pipelines.registration.registration_icp(
+        source, target, distance_threshold, result_ransac.transformation,
+        o3d.pipelines.registration.TransformationEstimationPointToPlane())
+    return result
+
 
 #----------------------------------------------------COMIENZO DEL PROGRAMA-----------------------------------------------------
 
@@ -298,6 +320,14 @@ result_ransac = execute_global_registration(source_down, target_down,
 #print(result_ransac)
 draw_registration_result(source_down, pcd, result_ransac.transformation)
 
+result_icp = refine_registration(source, target, source_fpfh, target_fpfh,
+                                 voxel_size)
+print(result_icp)
+draw_registration_result(source, target, result_icp.transformation)
+
+
+
+
 
 voxel_size = 0.002  # means cm for this dataset
 [source, target, source_down, target_down, source_fpfh, target_fpfh,total_time] = prepare_dataset(voxel_size,pcd4,"clouds/objects/s0_plant_corr.pcd")
@@ -308,6 +338,15 @@ result_ransac = execute_global_registration(source_down, target_down,
 #print(result_ransac)
 draw_registration_result(source_down, pcd, result_ransac.transformation)
 
+result_icp = refine_registration(source, target, source_fpfh, target_fpfh,
+                                 voxel_size)
+print(result_icp)
+draw_registration_result(source, target, result_icp.transformation)
+
+
+
+
+
 voxel_size = 0.002  # means 8mm for this dataset
 [source, target, source_down, target_down, source_fpfh, target_fpfh,total_time] = prepare_dataset(voxel_size,pcd4,"clouds/objects/s0_mug_corr.pcd")
 
@@ -317,6 +356,14 @@ result_ransac = execute_global_registration(source_down, target_down,
 #print(result_ransac)
 draw_registration_result(source_down, pcd, result_ransac.transformation)
 
+result_icp = refine_registration(source, target, source_fpfh, target_fpfh,
+                                 voxel_size)
+print(result_icp)
+draw_registration_result(source, target, result_icp.transformation)
+
+
+
+
 voxel_size = 0.002  # means 8mm for this dataset
 [source, target, source_down, target_down, source_fpfh, target_fpfh,total_time] = prepare_dataset(voxel_size,pcd4,"clouds/objects/s0_plc_corr.pcd")
 
@@ -325,5 +372,10 @@ result_ransac = execute_global_registration(source_down, target_down,
                                             voxel_size)
 #print(result_ransac)
 draw_registration_result(source_down, pcd, result_ransac.transformation)
+
+result_icp = refine_registration(source, target, source_fpfh, target_fpfh,
+                                 voxel_size)
+print(result_icp)
+draw_registration_result(source, target, result_icp.transformation)
 
 print(f"Total time of filtering: {total_time}")
