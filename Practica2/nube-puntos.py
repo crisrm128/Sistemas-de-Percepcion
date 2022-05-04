@@ -6,13 +6,16 @@ import numpy as np
 import copy
 import time
 
+from mpl_toolkits.mplot3d import axes3d
+import matplotlib.pyplot as plt
+
 one = 0
 total_time = 0
 
 #---------------------------------------------- DIBUJAR RESULTADO ---------------------------------------------------
 
 
-def draw_registration_result(source, target, transformation):
+def draw_registration_result(source, target, transformation,tree):
     source_temp = copy.deepcopy(source)
     target_temp = copy.deepcopy(target)
     source_temp.paint_uniform_color([0, 0, 1])
@@ -24,24 +27,21 @@ def draw_registration_result(source, target, transformation):
                                       lookat=[1.9892, 2.0208, 1.8945],
                                       up=[-0.2779, -0.9482, 0.1556])
 
+    tam = len(source_temp.points)
+    total_error=0
+    for i in range(tam):
+        p = source_temp.points[i]
+        [k, idx, d] = tree.search_knn_vector_3d(p, 1)
+        total_error = total_error + d[0]
+        #print(idx)
 
-
+    return total_error/float(tam) 
 #-------------------------------------------------- KEYPOINTS --------------------------------------------------------
 
 
-#def get_keypopints_iss_source(pcd):
+def get_keypopints_iss(pcd):
 
-#    pcd_keypoints = o3d.geometry.keypoint.compute_iss_keypoints(pcd,
- #                                                       salient_radius=0.004,
- #                                                       non_max_radius=0.006,
- #                                                       gamma_21=0.5,
- #                                                       gamma_32=0.7)
-
-
-#    return pcd_keypoints
-
-
-def get_keypopints_iss_target(pcd):
+    start = time.time()       
 
     pcd_keypoints = o3d.geometry.keypoint.compute_iss_keypoints(pcd,
                                                         salient_radius=0.004,
@@ -49,57 +49,43 @@ def get_keypopints_iss_target(pcd):
                                                         gamma_21=0.5,
                                                         gamma_32=0.7)
 
+    end = time.time()
 
-    return pcd_keypoints
+    return pcd_keypoints, end-start
+
+#-------------------------------------------------- NORMALS --------------------------------------------------------
+
+def estimate_normals(pcd, voxel_size):
+    
+    start = time.time() 
+
+    radius_normal = voxel_size * 3
+    #print(":: Estimate normal with search radius %.3f." % radius_normal)
+    pcd.estimate_normals(
+    o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))
+    
+    end = time.time()
+
+    time_normals = end-start
+
+    return pcd, time_normals
+
 
 #-------------------------------------------------- DESCRIPTORES -----------------------------------------------------
 
-def get_features_fpfh(pcd_down,pcd_keypoints,voxel_size, object): #Pasas la lista de keypoints como pcd_down y tamaño de voxel
+def get_features_fpfh(pcd_keypoints,voxel_size): #Pasas la lista de keypoints como pcd_down y tamaño de voxel
 
-    start = time.time()
-    radius_normal = voxel_size * 3
-    #print(":: Estimate normal with search radius %.3f." % radius_normal)
-    pcd_down.estimate_normals(
-        o3d.geometry.KDTreeSearchParamHybrid(radius=radius_normal, max_nn=30))
+    start = time.time()       
 
-    #print(pcd_down.normals.shape)
-
-    #kp_normals = np.zeros(np.array(pcd_keypoints.points).shape[0])
-    # From numpy to Open3D
-    #pcd_keypoints.normals = open3d.utility.Vector3dVector(kp_normals)
-
-    #print(np.array(pcd_keypoints.points).shape[0])
-    #print(np.array(pcd_down.points).shape[0])
-
-    if object == "clouds/objects/s0_piggybank_corr.pcd" or object == "clouds/objects/s0_plant_corr.pcd":
-
-        for i in range(np.array(pcd_down.points).shape[0]):
-            for j in range(np.array(pcd_keypoints.points).shape[0]):
-                if pcd_down.points[i][0] == pcd_keypoints.points[j][0] and pcd_down.points[i][1] == pcd_keypoints.points[j][1] and pcd_down.points[i][2] == pcd_keypoints.points[j][2]:
-                    pcd_keypoints.normals.insert(j, pcd_down.normals[i])
-                    #print(np.array(pcd_keypoints.normals).shape)              
-
-        radius_feature = voxel_size * 5
-        #print(":: Compute FPFH feature with search radius %.3f." % radius_feature)
-        pcd_fpfh = o3d.pipelines.registration.compute_fpfh_feature(
-            pcd_keypoints,
-            o3d.geometry.KDTreeSearchParamHybrid(radius=radius_feature, max_nn=100))
-    
-    else:
-        radius_feature = voxel_size * 10
-        #print(":: Compute FPFH feature with search radius %.3f." % radius_feature)
-        pcd_fpfh = o3d.pipelines.registration.compute_fpfh_feature(
-            pcd_down,
-            o3d.geometry.KDTreeSearchParamHybrid(radius=radius_feature, max_nn=100))
-
-    shape_kp = np.array(pcd_fpfh)
-    points_kp = shape_kp
+    radius_feature = voxel_size * 5
+    #print(":: Compute FPFH feature with search radius %.3f." % radius_feature)
+    pcd_fpfh = o3d.pipelines.registration.compute_fpfh_feature(
+        pcd_keypoints,
+        o3d.geometry.KDTreeSearchParamHybrid(radius=radius_feature, max_nn=100))
 
     end = time.time()
-    time_keypoints = end-start
 
-
-    return pcd_keypoints, pcd_fpfh, time_keypoints, points_kp
+    return pcd_keypoints, pcd_fpfh, end-start
 
 #-------------------------------------------------- FILTRADO --------------------------------------------------------
 
@@ -131,38 +117,36 @@ def prepare_dataset(voxel_size,pcd4,object):
 
     #draw_registration_result(source, target, np.identity(4))
 
-    
     source, pre_source_points, post_source_points, time_source_filter = filtering(source, voxel_size)
-    o3d.visualization.draw_geometries([source])
+    #o3d.visualization.draw_geometries([source])
     target,  pre_target_points, post_target_points,time_target_filter = filtering(target, voxel_size)
-    o3d.visualization.draw_geometries([target])
-    source_keypoints = get_keypopints_iss_target(source)
-    o3d.visualization.draw_geometries([source_keypoints])
-    target_keypoints = get_keypopints_iss_target(target)
-    o3d.visualization.draw_geometries([target_keypoints])
+    #o3d.visualization.draw_geometries([target])
 
-    
-    source_down, source_fpfh, source_time_keypoints, source_points_kp = get_features_fpfh(source,source_keypoints,voxel_size, object)
-    target_down, target_fpfh, target_time_keypoints, target_points_kp = get_features_fpfh(target,target_keypoints,voxel_size, object)
+    print(f"Número de puntos de {object} antes de filtro: {pre_source_points} y después de filtro: {post_source_points}. Ha tardado: {time_source_filter} s.")
+    print(f"Número de puntos de la escena antes de filtro: {pre_target_points} y después de filtro: {post_target_points}. Ha tardado: {time_target_filter} s.\n")
 
-    #print("Descriptores terminados")
+    source, time_source_normals = estimate_normals(source, voxel_size)
+    target, time_target_normals = estimate_normals(target,voxel_size)
 
-    global total_time
-    #total_time = total_time + (time_source_filter) + (time_target_filter)
-    global one
-    if(one==0):
-        one = 1
-    #    print(f"Points of scene before filter: {pre_target_points}; Points of scene after filter: {post_target_points}.")
-    #    print(f"Time for filter of scene: {time_source_filter}.")
-        print("")
-        #print(f"Keypoints of scene: {points_source_kp}.")
-        #print(f"Time for keypoints of scene: {time_source_keypoints}.")
+    print(f"Tiempo de obtención de normales de {object}: {time_source_normals} s.")
+    print(f"Tiempo de obtención de normales de la escena: {time_target_normals} s.\n")
 
-    #print(f"Ponts of {object} before filter: {pre_source_points}; Points of {object} after filter: {post_source_points}.")
-    #print(f"Time for filter of {object}: {time_target_filter}.")
-    print("")
-    #print(f"Keypoints of {object}: {points_target_kp}.")
-    #print(f"Time for keypoints of {object}: {time_target_keypoints}.")
+    source_keypoints, time_source_keypoints = get_keypopints_iss(source)
+    #o3d.visualization.draw_geometries([source_keypoints])
+    target_keypoints, time_target_keypoint = get_keypopints_iss(target)
+    #o3d.visualization.draw_geometries([target_keypoints])
+
+    shape_source = np.array(source_keypoints.points).shape
+    shape_target = np.array(target_keypoints.points).shape
+
+    print(f"Keypoints del {object}: {shape_source[0]} y se ha tardado: {time_source_keypoints} s.")
+    print(f"Keypoints de la escena: {shape_target[0]} y se ha tardado: {time_target_keypoint} s.\n")
+
+    source_down, source_fpfh, source_time_fpfh = get_features_fpfh(source_keypoints,voxel_size)
+    target_down, target_fpfh, target_time_fpfh = get_features_fpfh(target_keypoints,voxel_size)
+
+    print(f"Tiempo de obtención de los descriptores de {object}: {source_time_fpfh} s.")
+    print(f"Tiempo de obtención de los descriptores de la escena: {target_time_fpfh} s.\n")
 
     return source, target, source_down, target_down, source_fpfh, target_fpfh, total_time
 
@@ -170,6 +154,7 @@ def prepare_dataset(voxel_size,pcd4,object):
 
 def execute_global_registration(source_down, target_down, source_fpfh,
                                 target_fpfh, voxel_size):
+    start = time.time()
     distance_threshold = voxel_size * 10
     #print(":: RANSAC registration on downsampled point clouds.")
     #print("   Since the downsampling voxel size is %.3f," % voxel_size)
@@ -177,28 +162,21 @@ def execute_global_registration(source_down, target_down, source_fpfh,
     result = o3d.pipelines.registration.registration_ransac_based_on_feature_matching(
         source_down, target_down, source_fpfh, target_fpfh, True,
         distance_threshold,
-        o3d.pipelines.registration.TransformationEstimationPointToPoint(False), #No hace ICP porque supuestamente global registration ya da buenos resultados, pero se ha añadido despues
-        3, [ #3 es porque son ransac_n puntos aleatorios del objeto para compararlos con la escena
+        o3d.pipelines.registration.TransformationEstimationPointToPoint(False),
+        3, [
             o3d.pipelines.registration.CorrespondenceCheckerBasedOnEdgeLength(
                 0.9),
             o3d.pipelines.registration.CorrespondenceCheckerBasedOnDistance(
                 distance_threshold)
-        ], o3d.pipelines.registration.RANSACConvergenceCriteria(100000, 0.9)) #Numero de iteraciones para la convergencia y confianza (probabilidad)
-    return result
+        ], o3d.pipelines.registration.RANSACConvergenceCriteria(100000, 0.999))
 
-def refine_registration(source, target, source_fpfh, target_fpfh, voxel_size):
-    distance_threshold = voxel_size * 0.4
-    print(":: Point-to-plane ICP registration is applied on original point")
-    print("   clouds to refine the alignment. This time we use a strict")
-    print("   distance threshold %.3f." % distance_threshold)
-    result = o3d.pipelines.registration.registration_icp(
-        source, target, distance_threshold, result_ransac.transformation,
-        o3d.pipelines.registration.TransformationEstimationPointToPlane())
-    return result
+    end = time.time()
 
+    return result, end-start
 
 #----------------------------------------------------COMIENZO DEL PROGRAMA-----------------------------------------------------
 
+total_start = time.time()
 
 # Leer nube de puntos
 pcd = o3d.io.read_point_cloud("clouds/scenes/snap_0point.pcd")
@@ -292,7 +270,7 @@ outlier_cloud = pcd3.select_by_index(inliers, invert=True)
 shape_in = np.array(inlier_cloud.points).shape
 shape_out = np.array(outlier_cloud.points).shape
 
-print(f"Puntos eliminados 3 : {shape_in[0]} y Puntos seleccionados 3: {shape_out[0]}")
+print(f"Puntos eliminados 3 : {shape_in[0]} y Puntos seleccionados 3: {shape_out[0]}\n")
 
 total_eliminated = total_eliminated + shape_in[0]
 
@@ -305,77 +283,69 @@ time3 = end-start
 o3d.visualization.draw_geometries([pcd4])
 
 print(f"Puntos totales eliminados: {total_eliminated}; Puntos resultantes: {shape_out[0]}")
-print(f"Tiempo plano fondo: {time1}; Timepo plano lateral: {time2}; Tiempo plano mesa: {time3}; Tiempo total eliminación planos: {time1+time2+time3}")
-
-#print("Shape del tensor que contiene la imagen:", np.array(pcd_sub.points).shape)
+print(f"Tiempo plano fondo: {time1}; Timepo plano lateral: {time2}; Tiempo plano mesa: {time3}; Tiempo total eliminación planos: {time1+time2+time3}\n\n")
 
 #FILTRADO - KEYPOINTS - CALCULO DE NORMALES - MATCHING
+
+pcd_tree = o3d.geometry.KDTreeFlann(pcd)
+
+print(f"---------------------------------------------------- BANK ----------------------------------------------------\n")
 
 voxel_size = 0.002  # means 1cm for this dataset
 [source, target, source_down, target_down, source_fpfh, target_fpfh, total_time] = prepare_dataset(voxel_size,pcd4,"clouds/objects/s0_piggybank_corr.pcd")
 
-result_ransac = execute_global_registration(source_down, target_down,
+result_ransac, time_ransac = execute_global_registration(source_down, target_down,
                                             source_fpfh, target_fpfh,
                                             voxel_size)
-#print(result_ransac)
-draw_registration_result(source_down, pcd, result_ransac.transformation)
 
-result_icp = refine_registration(source, target, source_fpfh, target_fpfh,
-                                 voxel_size)
-print(result_icp)
-draw_registration_result(source, target, result_icp.transformation)
+error = draw_registration_result(source_down, pcd, result_ransac.transformation,pcd_tree)
 
+print(f"Fitnes bank: {result_ransac} en {time_ransac}s.")
+print(f"Error bank= {error}\n\n")
 
-
-
+print(f"---------------------------------------------------- PLANT ----------------------------------------------------\n")
 
 voxel_size = 0.002  # means cm for this dataset
 [source, target, source_down, target_down, source_fpfh, target_fpfh,total_time] = prepare_dataset(voxel_size,pcd4,"clouds/objects/s0_plant_corr.pcd")
 
-result_ransac = execute_global_registration(source_down, target_down,
+result_ransac, time_ransac = execute_global_registration(source_down, target_down,
                                             source_fpfh, target_fpfh,
                                             voxel_size)
-#print(result_ransac)
-draw_registration_result(source_down, pcd, result_ransac.transformation)
+error = draw_registration_result(source_down, pcd, result_ransac.transformation,pcd_tree)
 
-result_icp = refine_registration(source, target, source_fpfh, target_fpfh,
-                                 voxel_size)
-print(result_icp)
-draw_registration_result(source, target, result_icp.transformation)
+print(f"Fitnes plant: {result_ransac} en {time_ransac}s.")
+print(f"Error plant= {error}\n\n")
 
-
-
-
+print(f"---------------------------------------------------- MUG ----------------------------------------------------\n")
 
 voxel_size = 0.002  # means 8mm for this dataset
 [source, target, source_down, target_down, source_fpfh, target_fpfh,total_time] = prepare_dataset(voxel_size,pcd4,"clouds/objects/s0_mug_corr.pcd")
 
-result_ransac = execute_global_registration(source_down, target_down,
+result_ransac, time_ransac = execute_global_registration(source_down, target_down,
                                             source_fpfh, target_fpfh,
                                             voxel_size)
-#print(result_ransac)
-draw_registration_result(source_down, pcd, result_ransac.transformation)
 
-result_icp = refine_registration(source, target, source_fpfh, target_fpfh,
-                                 voxel_size)
-print(result_icp)
-draw_registration_result(source, target, result_icp.transformation)
+error = draw_registration_result(source_down, pcd, result_ransac.transformation,pcd_tree)
 
+print(f"Fitnes mug: {result_ransac} en {time_ransac}s.")
+print(f"Error mug= {error}\n\n")
 
-
+print(f"---------------------------------------------------- PLC ----------------------------------------------------\n")
 
 voxel_size = 0.002  # means 8mm for this dataset
 [source, target, source_down, target_down, source_fpfh, target_fpfh,total_time] = prepare_dataset(voxel_size,pcd4,"clouds/objects/s0_plc_corr.pcd")
 
-result_ransac = execute_global_registration(source_down, target_down,
+result_ransac, time_ransac = execute_global_registration(source_down, target_down,
                                             source_fpfh, target_fpfh,
                                             voxel_size)
-#print(result_ransac)
-draw_registration_result(source_down, pcd, result_ransac.transformation)
 
-result_icp = refine_registration(source, target, source_fpfh, target_fpfh,
-                                 voxel_size)
-print(result_icp)
-draw_registration_result(source, target, result_icp.transformation)
+error = draw_registration_result(source_down, pcd, result_ransac.transformation,pcd_tree)
 
 print(f"Total time of filtering: {total_time}")
+
+print(f"Fitnes plc: {result_ransac} en {time_ransac}s.")
+print(f"Error plc= {error}\n\n")
+
+total_end = time.time()
+
+print(f"Tiempo total de ejecución: {total_end-total_start}")
