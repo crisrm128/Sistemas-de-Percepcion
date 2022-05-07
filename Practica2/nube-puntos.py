@@ -46,14 +46,14 @@ def get_keypopints_iss(pcd):
     pcd_keypoints = o3d.geometry.keypoint.compute_iss_keypoints(pcd,
                                                         salient_radius=0.004,
                                                         non_max_radius=0.006,
-                                                        gamma_21=0.5,
-                                                        gamma_32=0.7)
+                                                        gamma_21=0.39,
+                                                        gamma_32=0.9)
 
     end = time.time()
 
     return pcd_keypoints, end-start
 
-#-------------------------------------------------- NORMALS --------------------------------------------------------
+#-------------------------------------------------- NORMALES --------------------------------------------------------
 
 def estimate_normals(pcd, voxel_size):
     
@@ -87,7 +87,7 @@ def get_features_fpfh(pcd_keypoints,voxel_size): #Pasas la lista de keypoints co
 
     return pcd_keypoints, pcd_fpfh, end-start
 
-#-------------------------------------------------- FILTRADO --------------------------------------------------------
+#-------------------------------------------------- FILTRADO ---------------------------------------------------------
 
 
 def filtering(pcd,voxel_size):
@@ -150,7 +150,7 @@ def prepare_dataset(voxel_size,pcd4,object):
 
     return source, target, source_down, target_down, source_fpfh, target_fpfh, total_time
 
-#--------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------- TRANSFORMACIÓN -------------------------------------------------------------
 
 def execute_global_registration(source_down, target_down, source_fpfh,
                                 target_fpfh, voxel_size):
@@ -172,6 +172,20 @@ def execute_global_registration(source_down, target_down, source_fpfh,
 
     end = time.time()
 
+    return result, end-start
+
+def refine_registration(source, target, source_fpfh, target_fpfh, voxel_size):
+    start = time.time()
+
+    distance_threshold = voxel_size * 0.4
+    print(":: Point-to-plane ICP registration is applied on original point")
+    print("   clouds to refine the alignment. This time we use a strict")
+    print("   distance threshold %.3f." % distance_threshold)
+    result = o3d.pipelines.registration.registration_icp(
+        source, target, distance_threshold, result_ransac.transformation,
+        o3d.pipelines.registration.TransformationEstimationPointToPlane())
+
+    end = time.time()
     return result, end-start
 
 #----------------------------------------------------COMIENZO DEL PROGRAMA-----------------------------------------------------
@@ -291,59 +305,72 @@ pcd_tree = o3d.geometry.KDTreeFlann(pcd)
 
 print(f"---------------------------------------------------- BANK ----------------------------------------------------\n")
 
-voxel_size = 0.002  # means 1cm for this dataset
+voxel_size = 0.002  # means 2cm for this dataset
 [source, target, source_down, target_down, source_fpfh, target_fpfh, total_time] = prepare_dataset(voxel_size,pcd4,"clouds/objects/s0_piggybank_corr.pcd")
 
 result_ransac, time_ransac = execute_global_registration(source_down, target_down,
                                             source_fpfh, target_fpfh,
                                             voxel_size)
 
-error = draw_registration_result(source_down, pcd, result_ransac.transformation,pcd_tree)
+result_icp, time_icp = refine_registration(source, target, source_fpfh, target_fpfh,
+                                 voxel_size)
 
-print(f"Fitnes bank: {result_ransac} en {time_ransac}s.")
+error = draw_registration_result(source_down, pcd, result_icp.transformation,pcd_tree)
+
+print(f"Fitness bank: {result_icp} en {time_ransac + time_icp}s.")
 print(f"Error bank= {error}\n\n")
 
 print(f"---------------------------------------------------- PLANT ----------------------------------------------------\n")
 
-voxel_size = 0.002  # means cm for this dataset
+voxel_size = 0.002  # means 2cm for this dataset
 [source, target, source_down, target_down, source_fpfh, target_fpfh,total_time] = prepare_dataset(voxel_size,pcd4,"clouds/objects/s0_plant_corr.pcd")
 
 result_ransac, time_ransac = execute_global_registration(source_down, target_down,
                                             source_fpfh, target_fpfh,
                                             voxel_size)
-error = draw_registration_result(source_down, pcd, result_ransac.transformation,pcd_tree)
 
-print(f"Fitnes plant: {result_ransac} en {time_ransac}s.")
+result_icp, time_icp = refine_registration(source, target, source_fpfh, target_fpfh,
+                                 voxel_size)
+
+error = draw_registration_result(source_down, pcd, result_icp.transformation,pcd_tree)
+
+print(f"Fitness plant: {result_icp} en {time_ransac + time_icp}s.")
 print(f"Error plant= {error}\n\n")
 
 print(f"---------------------------------------------------- MUG ----------------------------------------------------\n")
 
-voxel_size = 0.002  # means 8mm for this dataset
+voxel_size = 0.002 # means 2cm for this dataset
 [source, target, source_down, target_down, source_fpfh, target_fpfh,total_time] = prepare_dataset(voxel_size,pcd4,"clouds/objects/s0_mug_corr.pcd")
 
 result_ransac, time_ransac = execute_global_registration(source_down, target_down,
                                             source_fpfh, target_fpfh,
                                             voxel_size)
 
-error = draw_registration_result(source_down, pcd, result_ransac.transformation,pcd_tree)
+result_icp, time_icp = refine_registration(source, target, source_fpfh, target_fpfh,
+                                 voxel_size)
 
-print(f"Fitnes mug: {result_ransac} en {time_ransac}s.")
+error = draw_registration_result(source_down, pcd, result_icp.transformation,pcd_tree)
+
+print(f"Fitness mug: {result_icp} en {time_ransac + time_icp}s.")
 print(f"Error mug= {error}\n\n")
 
 print(f"---------------------------------------------------- PLC ----------------------------------------------------\n")
 
-voxel_size = 0.002  # means 8mm for this dataset
+voxel_size = 0.002 # means 2cm for this dataset
 [source, target, source_down, target_down, source_fpfh, target_fpfh,total_time] = prepare_dataset(voxel_size,pcd4,"clouds/objects/s0_plc_corr.pcd")
 
 result_ransac, time_ransac = execute_global_registration(source_down, target_down,
                                             source_fpfh, target_fpfh,
                                             voxel_size)
 
-error = draw_registration_result(source_down, pcd, result_ransac.transformation,pcd_tree)
+result_icp, time_icp = refine_registration(source, target, source_fpfh, target_fpfh,
+                                 voxel_size)
+
+error = draw_registration_result(source_down, pcd, result_icp.transformation,pcd_tree)
 
 print(f"Total time of filtering: {total_time}")
 
-print(f"Fitnes plc: {result_ransac} en {time_ransac}s.")
+print(f"Fitness plc: {result_icp} en {time_ransac + time_icp}s.")
 print(f"Error plc= {error}\n\n")
 
 total_end = time.time()
