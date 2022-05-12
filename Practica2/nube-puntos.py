@@ -21,11 +21,11 @@ def draw_registration_result(source, target, transformation,tree):
     source_temp.paint_uniform_color([0, 0, 1])
     #target_temp.paint_uniform_color([0, 0.651, 0.929])
     source_temp.transform(transformation)
-    o3d.visualization.draw_geometries([source_temp, target_temp],
-                                      zoom=0.4559,
-                                      front=[0.6452, -0.3036, -0.7011],
-                                      lookat=[1.9892, 2.0208, 1.8945],
-                                      up=[-0.2779, -0.9482, 0.1556])
+    #o3d.visualization.draw_geometries([source_temp, target_temp],
+    #                                  zoom=0.4559,
+    #                                  front=[0.6452, -0.3036, -0.7011],
+    #                                  lookat=[1.9892, 2.0208, 1.8945],
+    #                                  up=[-0.2779, -0.9482, 0.1556])
 
     tam = len(source_temp.points)
     total_error=0
@@ -44,10 +44,10 @@ def get_keypopints_iss(pcd):
     start = time.time()       
 
     pcd_keypoints = o3d.geometry.keypoint.compute_iss_keypoints(pcd,
-                                                        salient_radius=0.004,
-                                                        non_max_radius=0.006,
-                                                        gamma_21=0.39,
-                                                        gamma_32=0.9)
+                                                        salient_radius=0.005,
+                                                        non_max_radius=0.0065,
+                                                        gamma_21=0.45,
+                                                        gamma_32=0.5)
 
     end = time.time()
 
@@ -155,7 +155,7 @@ def prepare_dataset(voxel_size,pcd4,object):
 def execute_global_registration(source_down, target_down, source_fpfh,
                                 target_fpfh, voxel_size):
     start = time.time()
-    distance_threshold = voxel_size * 10
+    distance_threshold = voxel_size * 1.5
     #print(":: RANSAC registration on downsampled point clouds.")
     #print("   Since the downsampling voxel size is %.3f," % voxel_size)
     #print("   we use a liberal distance threshold %.3f." % distance_threshold)
@@ -168,7 +168,7 @@ def execute_global_registration(source_down, target_down, source_fpfh,
                 0.9),
             o3d.pipelines.registration.CorrespondenceCheckerBasedOnDistance(
                 distance_threshold)
-        ], o3d.pipelines.registration.RANSACConvergenceCriteria(100000, 0.999))
+        ], o3d.pipelines.registration.RANSACConvergenceCriteria(100000000, 0.999))
 
     end = time.time()
 
@@ -177,7 +177,7 @@ def execute_global_registration(source_down, target_down, source_fpfh,
 def refine_registration(source, target, source_fpfh, target_fpfh, voxel_size):
     start = time.time()
 
-    distance_threshold = voxel_size * 0.4
+    distance_threshold = voxel_size * 0.2
     print(":: Point-to-plane ICP registration is applied on original point")
     print("   clouds to refine the alignment. This time we use a strict")
     print("   distance threshold %.3f." % distance_threshold)
@@ -294,7 +294,7 @@ pcd4 = outlier_cloud
 end = time.time()
 time3 = end-start
 
-o3d.visualization.draw_geometries([pcd4])
+#o3d.visualization.draw_geometries([pcd4])
 
 print(f"Puntos totales eliminados: {total_eliminated}; Puntos resultantes: {shape_out[0]}")
 print(f"Tiempo plano fondo: {time1}; Timepo plano lateral: {time2}; Tiempo plano mesa: {time3}; Tiempo total eliminación planos: {time1+time2+time3}\n\n")
@@ -356,7 +356,7 @@ print(f"Error mug= {error}\n\n")
 
 print(f"---------------------------------------------------- PLC ----------------------------------------------------\n")
 
-voxel_size = 0.002 # means 2cm for this dataset
+voxel_size = 0.00145 # means 2cm for this dataset
 [source, target, source_down, target_down, source_fpfh, target_fpfh,total_time] = prepare_dataset(voxel_size,pcd4,"clouds/objects/s0_plc_corr.pcd")
 
 result_ransac, time_ransac = execute_global_registration(source_down, target_down,
