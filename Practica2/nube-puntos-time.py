@@ -21,11 +21,11 @@ def draw_registration_result(source, target, transformation,tree):
     source_temp.paint_uniform_color([0, 0, 1])
     #target_temp.paint_uniform_color([0, 0.651, 0.929])
     source_temp.transform(transformation)
-    # o3d.visualization.draw_geometries([source_temp, target_temp],
-    #                                   zoom=0.4559,
-    #                                   front=[0.6452, -0.3036, -0.7011],
-    #                                   lookat=[1.9892, 2.0208, 1.8945],
-    #                                   up=[-0.2779, -0.9482, 0.1556])
+    #o3d.visualization.draw_geometries([source_temp, target_temp],
+    #                                  zoom=0.4559,
+    #                                  front=[0.6452, -0.3036, -0.7011],
+    #                                  lookat=[1.9892, 2.0208, 1.8945],
+    #                                  up=[-0.2779, -0.9482, 0.1556])
 
     tam = len(source_temp.points)
     total_error=0
@@ -98,7 +98,7 @@ def filtering(pcd,voxel_size):
 
     start = time.time()
     pcd_down = pcd.voxel_down_sample(voxel_size)
-    #pcd_down = pcd.uniform_down_sample(every_k_points=5)
+    #pcd_down = pcd.uniform_down_sample(every_k_points=2)
     end = time.time()
     time_filter = end-start
 
@@ -174,13 +174,13 @@ def execute_global_registration(source_down, target_down, source_fpfh,
 
     return result, end-start
 
-def refine_registration(source, target, voxel_size):
+def refine_registration(source, target, source_fpfh, target_fpfh, voxel_size):
     start = time.time()
 
     distance_threshold = voxel_size * 0.2
-    print(":: Point-to-plane ICP registration is applied on original point")
-    print("   clouds to refine the alignment. This time we use a strict")
-    print("   distance threshold %.3f." % distance_threshold)
+    #print(":: Point-to-plane ICP registration is applied on original point")
+    #print("   clouds to refine the alignment. This time we use a strict")
+    #print("   distance threshold %.3f." % distance_threshold)
     result = o3d.pipelines.registration.registration_icp(
         source, target, distance_threshold, result_ransac.transformation,
         o3d.pipelines.registration.TransformationEstimationPointToPlane())
@@ -201,9 +201,9 @@ pcd = o3d.io.read_point_cloud("clouds/scenes/snap_0point.pcd")
 #Primera iteracion
 
 start = time.time()
-plane_model, inliers = pcd.segment_plane(distance_threshold=0.05,
-                                         ransac_n=3,
-                                         num_iterations=1000)
+plane_model, inliers = pcd.segment_plane(distance_threshold=0.06,
+                                         ransac_n=5,
+                                         num_iterations=500)
 
 [a, b, c, d] = plane_model
 #print(f"Plane equation: {a:.2f}x + {b:.2f}y + {c:.2f}z + {d:.2f} = 0")
@@ -234,9 +234,9 @@ time1 = end-start
 #Segunda iteracion
 
 start = time.time()
-plane_model, inliers = pcd2.segment_plane(distance_threshold=0.05,
-                                         ransac_n=3,
-                                         num_iterations=1000)
+plane_model, inliers = pcd2.segment_plane(distance_threshold=0.06,
+                                         ransac_n=5,
+                                         num_iterations=500)
 
 [a, b, c, d] = plane_model
 #print(f"Plane equation: {a:.2f}x + {b:.2f}y + {c:.2f}z + {d:.2f} = 0")
@@ -265,9 +265,9 @@ time2 = end-start
 #Tercera iteracion
 
 start = time.time()
-plane_model, inliers = pcd3.segment_plane(distance_threshold=0.01,
-                                         ransac_n=3,
-                                         num_iterations=1000)
+plane_model, inliers = pcd3.segment_plane(distance_threshold=0.008,
+                                         ransac_n=5,
+                                         num_iterations=500)
 
 [a, b, c, d] = plane_model
 #print(f"Plane equation: {a:.2f}x + {b:.2f}y + {c:.2f}z + {d:.2f} = 0")
@@ -312,7 +312,8 @@ result_ransac, time_ransac = execute_global_registration(source_down, target_dow
                                             source_fpfh, target_fpfh,
                                             voxel_size)
 
-result_icp, time_icp = refine_registration(source, target, voxel_size)
+result_icp, time_icp = refine_registration(source, target, source_fpfh, target_fpfh,
+                                 voxel_size)
 
 error = draw_registration_result(source_down, pcd, result_icp.transformation,pcd_tree)
 
@@ -328,7 +329,8 @@ result_ransac, time_ransac = execute_global_registration(source_down, target_dow
                                             source_fpfh, target_fpfh,
                                             voxel_size)
 
-result_icp, time_icp = refine_registration(source, target, voxel_size)
+result_icp, time_icp = refine_registration(source, target, source_fpfh, target_fpfh,
+                                 voxel_size)
 
 error = draw_registration_result(source_down, pcd, result_icp.transformation,pcd_tree)
 
@@ -344,7 +346,8 @@ result_ransac, time_ransac = execute_global_registration(source_down, target_dow
                                             source_fpfh, target_fpfh,
                                             voxel_size)
 
-result_icp, time_icp = refine_registration(source, target, voxel_size)
+result_icp, time_icp = refine_registration(source, target, source_fpfh, target_fpfh,
+                                 voxel_size)
 
 error = draw_registration_result(source_down, pcd, result_icp.transformation,pcd_tree)
 
@@ -360,7 +363,8 @@ result_ransac, time_ransac = execute_global_registration(source_down, target_dow
                                             source_fpfh, target_fpfh,
                                             voxel_size)
 
-result_icp, time_icp = refine_registration(source, target, voxel_size)
+result_icp, time_icp = refine_registration(source, target, source_fpfh, target_fpfh,
+                                 voxel_size)
 
 error = draw_registration_result(source_down, pcd, result_icp.transformation,pcd_tree)
 

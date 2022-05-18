@@ -67,6 +67,7 @@ def estimate_normals(pcd, voxel_size):
     end = time.time()
 
     time_normals = end-start
+    o3d.visualization.draw_geometries([pcd])
 
     return pcd, time_normals
 
@@ -118,9 +119,9 @@ def prepare_dataset(voxel_size,pcd4,object):
     #draw_registration_result(source, target, np.identity(4))
 
     source, pre_source_points, post_source_points, time_source_filter = filtering(source, voxel_size)
-    #o3d.visualization.draw_geometries([source])
+    o3d.visualization.draw_geometries([source])
     target,  pre_target_points, post_target_points,time_target_filter = filtering(target, voxel_size)
-    #o3d.visualization.draw_geometries([target])
+    o3d.visualization.draw_geometries([target])
 
     print(f"Número de puntos de {object} antes de filtro: {pre_source_points} y después de filtro: {post_source_points}. Ha tardado: {time_source_filter} s.")
     print(f"Número de puntos de la escena antes de filtro: {pre_target_points} y después de filtro: {post_target_points}. Ha tardado: {time_target_filter} s.\n")
@@ -132,9 +133,9 @@ def prepare_dataset(voxel_size,pcd4,object):
     print(f"Tiempo de obtención de normales de la escena: {time_target_normals} s.\n")
 
     source_keypoints, time_source_keypoints = get_keypopints_iss(source)
-    #o3d.visualization.draw_geometries([source_keypoints])
+    o3d.visualization.draw_geometries([source_keypoints])
     target_keypoints, time_target_keypoint = get_keypopints_iss(target)
-    #o3d.visualization.draw_geometries([target_keypoints])
+    o3d.visualization.draw_geometries([target_keypoints])
 
     shape_source = np.array(source_keypoints.points).shape
     shape_target = np.array(target_keypoints.points).shape
@@ -201,9 +202,9 @@ pcd = o3d.io.read_point_cloud("clouds/scenes/snap_0point.pcd")
 #Primera iteracion
 
 start = time.time()
-plane_model, inliers = pcd.segment_plane(distance_threshold=0.05,
-                                         ransac_n=3,
-                                         num_iterations=1000)
+plane_model, inliers = pcd.segment_plane(distance_threshold=0.06,
+                                         ransac_n=5,
+                                         num_iterations=500)
 
 [a, b, c, d] = plane_model
 #print(f"Plane equation: {a:.2f}x + {b:.2f}y + {c:.2f}z + {d:.2f} = 0")
@@ -211,11 +212,11 @@ plane_model, inliers = pcd.segment_plane(distance_threshold=0.05,
 inlier_cloud = pcd.select_by_index(inliers)
 inlier_cloud.paint_uniform_color([1.0, 0, 0])
 outlier_cloud = pcd.select_by_index(inliers, invert=True)
-#o3d.visualization.draw_geometries([inlier_cloud, outlier_cloud],
-#                                  zoom=0.8,
-#                                  front=[-0.4999, -0.1659, -0.8499],
-#                                  lookat=[2.1813, 2.0619, 2.0999],
-#                                  up=[0.1204, -0.9852, 0.1215])
+o3d.visualization.draw_geometries([inlier_cloud, outlier_cloud],
+                                  zoom=0.8,
+                                  front=[-0.4999, -0.1659, -0.8499],
+                                  lookat=[2.1813, 2.0619, 2.0999],
+                                  up=[0.1204, -0.9852, 0.1215])
 
 shape_in = np.array(inlier_cloud.points).shape
 shape_out = np.array(outlier_cloud.points).shape
@@ -225,18 +226,19 @@ print(f"Puntos eliminados 1 : {shape_in[0]} y Puntos seleccionados 1: {shape_out
 total_eliminated = shape_in[0]
 
 pcd2 = outlier_cloud
-#o3d.visualization.draw_geometries([pcd2])
+o3d.visualization.draw_geometries([pcd2])
 
 end = time.time()
 
 time1 = end-start
+print(f"Time: {time1}")
 
 #Segunda iteracion
 
 start = time.time()
-plane_model, inliers = pcd2.segment_plane(distance_threshold=0.05,
-                                         ransac_n=3,
-                                         num_iterations=1000)
+plane_model, inliers = pcd2.segment_plane(distance_threshold=0.06,
+                                         ransac_n=5,
+                                         num_iterations=500)
 
 [a, b, c, d] = plane_model
 #print(f"Plane equation: {a:.2f}x + {b:.2f}y + {c:.2f}z + {d:.2f} = 0")
@@ -244,11 +246,11 @@ plane_model, inliers = pcd2.segment_plane(distance_threshold=0.05,
 inlier_cloud = pcd2.select_by_index(inliers)
 inlier_cloud.paint_uniform_color([0, 0, 1])
 outlier_cloud = pcd2.select_by_index(inliers, invert=True)
-#o3d.visualization.draw_geometries([inlier_cloud, outlier_cloud],
-#                                  zoom=0.8,
-#                                  front=[-0.4999, -0.1659, -0.8499],
-#                                  lookat=[2.1813, 2.0619, 2.0999],
-#                                  up=[0.1204, -0.9852, 0.1215])
+o3d.visualization.draw_geometries([inlier_cloud, outlier_cloud],
+                                  zoom=0.8,
+                                  front=[-0.4999, -0.1659, -0.8499],
+                                  lookat=[2.1813, 2.0619, 2.0999],
+                                  up=[0.1204, -0.9852, 0.1215])
 
 shape_in = np.array(inlier_cloud.points).shape
 shape_out = np.array(outlier_cloud.points).shape
@@ -265,9 +267,9 @@ time2 = end-start
 #Tercera iteracion
 
 start = time.time()
-plane_model, inliers = pcd3.segment_plane(distance_threshold=0.01,
-                                         ransac_n=3,
-                                         num_iterations=1000)
+plane_model, inliers = pcd3.segment_plane(distance_threshold=0.008,
+                                         ransac_n=5,
+                                         num_iterations=500)
 
 [a, b, c, d] = plane_model
 #print(f"Plane equation: {a:.2f}x + {b:.2f}y + {c:.2f}z + {d:.2f} = 0")
@@ -275,11 +277,11 @@ plane_model, inliers = pcd3.segment_plane(distance_threshold=0.01,
 inlier_cloud = pcd3.select_by_index(inliers)
 inlier_cloud.paint_uniform_color([0, 1, 0])
 outlier_cloud = pcd3.select_by_index(inliers, invert=True)
-#o3d.visualization.draw_geometries([inlier_cloud, outlier_cloud],
-#                                  zoom=0.8,
-#                                  front=[-0.4999, -0.1659, -0.8499],
-#                                  lookat=[2.1813, 2.0619, 2.0999],
-#                                  up=[0.1204, -0.9852, 0.1215])
+o3d.visualization.draw_geometries([inlier_cloud, outlier_cloud],
+                                  zoom=0.8,
+                                  front=[-0.4999, -0.1659, -0.8499],
+                                  lookat=[2.1813, 2.0619, 2.0999],
+                                  up=[0.1204, -0.9852, 0.1215])
 
 shape_in = np.array(inlier_cloud.points).shape
 shape_out = np.array(outlier_cloud.points).shape
@@ -294,7 +296,7 @@ pcd4 = outlier_cloud
 end = time.time()
 time3 = end-start
 
-#o3d.visualization.draw_geometries([pcd4])
+o3d.visualization.draw_geometries([pcd4])
 
 print(f"Puntos totales eliminados: {total_eliminated}; Puntos resultantes: {shape_out[0]}")
 print(f"Tiempo plano fondo: {time1}; Timepo plano lateral: {time2}; Tiempo plano mesa: {time3}; Tiempo total eliminación planos: {time1+time2+time3}\n\n")
