@@ -1,4 +1,5 @@
 from multiprocessing import shared_memory
+import re
 from tracemalloc import start
 import open3d as o3d
 from open3d import *
@@ -36,6 +37,8 @@ def draw_registration_result(source, target, transformation,tree):
         #print(idx)
 
     return total_error/float(tam) 
+
+
 #-------------------------------------------------- KEYPOINTS --------------------------------------------------------
 
 
@@ -70,7 +73,6 @@ def estimate_normals(pcd, voxel_size):
 
     return pcd, time_normals
 
-
 #-------------------------------------------------- DESCRIPTORES -----------------------------------------------------
 
 def get_features_fpfh(pcd_keypoints,voxel_size): #Pasas la lista de keypoints como pcd_down y tamaño de voxel
@@ -81,7 +83,7 @@ def get_features_fpfh(pcd_keypoints,voxel_size): #Pasas la lista de keypoints co
     #print(":: Compute FPFH feature with search radius %.3f." % radius_feature)
     pcd_fpfh = o3d.pipelines.registration.compute_fpfh_feature(
         pcd_keypoints,
-        o3d.geometry.KDTreeSearchParamHybrid(radius=radius_feature, max_nn=100))
+        o3d.geometry.KDTreeSearchParamHybrid(radius=radius_feature, max_nn=50))
 
     end = time.time()
 
@@ -98,7 +100,7 @@ def filtering(pcd,voxel_size):
 
     start = time.time()
     pcd_down = pcd.voxel_down_sample(voxel_size)
-    #pcd_down = pcd.uniform_down_sample(every_k_points=2)
+    #pcd_down = pcd.uniform_down_sample(every_k_points=5)
     end = time.time()
     time_filter = end-start
 
@@ -168,7 +170,7 @@ def execute_global_registration(source_down, target_down, source_fpfh,
                 0.9),
             o3d.pipelines.registration.CorrespondenceCheckerBasedOnDistance(
                 distance_threshold)
-        ], o3d.pipelines.registration.RANSACConvergenceCriteria(100000000, 0.999))
+        ], o3d.pipelines.registration.RANSACConvergenceCriteria(10000000, 0.999))
 
     end = time.time()
 
@@ -201,9 +203,9 @@ pcd = o3d.io.read_point_cloud("clouds/scenes/snap_0point.pcd")
 #Primera iteracion
 
 start = time.time()
-plane_model, inliers = pcd.segment_plane(distance_threshold=0.06,
-                                         ransac_n=5,
-                                         num_iterations=500)
+plane_model, inliers = pcd.segment_plane(distance_threshold=0.05,
+                                         ransac_n=3,
+                                         num_iterations=1000)
 
 [a, b, c, d] = plane_model
 #print(f"Plane equation: {a:.2f}x + {b:.2f}y + {c:.2f}z + {d:.2f} = 0")
@@ -234,9 +236,9 @@ time1 = end-start
 #Segunda iteracion
 
 start = time.time()
-plane_model, inliers = pcd2.segment_plane(distance_threshold=0.06,
-                                         ransac_n=5,
-                                         num_iterations=500)
+plane_model, inliers = pcd2.segment_plane(distance_threshold=0.05,
+                                         ransac_n=3,
+                                         num_iterations=1000)
 
 [a, b, c, d] = plane_model
 #print(f"Plane equation: {a:.2f}x + {b:.2f}y + {c:.2f}z + {d:.2f} = 0")
@@ -265,9 +267,9 @@ time2 = end-start
 #Tercera iteracion
 
 start = time.time()
-plane_model, inliers = pcd3.segment_plane(distance_threshold=0.008,
-                                         ransac_n=5,
-                                         num_iterations=500)
+plane_model, inliers = pcd3.segment_plane(distance_threshold=0.01,
+                                         ransac_n=3,
+                                         num_iterations=1000)
 
 [a, b, c, d] = plane_model
 #print(f"Plane equation: {a:.2f}x + {b:.2f}y + {c:.2f}z + {d:.2f} = 0")
@@ -294,7 +296,7 @@ pcd4 = outlier_cloud
 end = time.time()
 time3 = end-start
 
-o3d.visualization.draw_geometries([pcd4])
+#o3d.visualization.draw_geometries([pcd4])
 
 print(f"Puntos totales eliminados: {total_eliminated}; Puntos resultantes: {shape_out[0]}")
 print(f"Tiempo plano fondo: {time1}; Timepo plano lateral: {time2}; Tiempo plano mesa: {time3}; Tiempo total eliminación planos: {time1+time2+time3}\n\n")
@@ -320,6 +322,12 @@ error = draw_registration_result(source_down, pcd, result_icp.transformation,pcd
 print(f"Fitness bank: {result_icp} en {time_ransac + time_icp}s.")
 print(f"Error bank= {error}\n\n")
 
+# error = draw_registration_result(source_down, pcd, result_ransac.transformation,pcd_tree)
+
+# print(result_ransac)
+# print(f"Bank en {time_ransac}s.")
+# print(f"Error bank= {error}\n\n")
+
 print(f"---------------------------------------------------- PLANT ----------------------------------------------------\n")
 
 voxel_size = 0.002  # means 2cm for this dataset
@@ -337,6 +345,12 @@ error = draw_registration_result(source_down, pcd, result_icp.transformation,pcd
 print(f"Fitness plant: {result_icp} en {time_ransac + time_icp}s.")
 print(f"Error plant= {error}\n\n")
 
+# error = draw_registration_result(source_down, pcd, result_ransac.transformation,pcd_tree)
+
+# print(result_ransac)
+# print(f"Plant en {time_ransac}s.")
+# print(f"Error plant= {error}\n\n")
+
 print(f"---------------------------------------------------- MUG ----------------------------------------------------\n")
 
 voxel_size = 0.002 # means 2cm for this dataset
@@ -353,6 +367,12 @@ error = draw_registration_result(source_down, pcd, result_icp.transformation,pcd
 
 print(f"Fitness mug: {result_icp} en {time_ransac + time_icp}s.")
 print(f"Error mug= {error}\n\n")
+
+# error = draw_registration_result(source_down, pcd, result_ransac.transformation,pcd_tree)
+
+# print(result_ransac)
+# print(f"Mug en {time_ransac}s.")
+# print(f"Error mug= {error}\n\n")
 
 print(f"---------------------------------------------------- PLC ----------------------------------------------------\n")
 
@@ -372,6 +392,12 @@ print(f"Total time of filtering: {total_time}")
 
 print(f"Fitness plc: {result_icp} en {time_ransac + time_icp}s.")
 print(f"Error plc= {error}\n\n")
+
+# error = draw_registration_result(source_down, pcd, result_ransac.transformation,pcd_tree)
+
+# print(result_ransac)
+# print(f"Plc en {time_ransac}s.")
+# print(f"Error plc= {error}\n\n")
 
 total_end = time.time()
 
