@@ -81,7 +81,7 @@ def get_features_fpfh(pcd_keypoints,voxel_size): #Pasas la lista de keypoints co
     #print(":: Compute FPFH feature with search radius %.3f." % radius_feature)
     pcd_fpfh = o3d.pipelines.registration.compute_fpfh_feature(
         pcd_keypoints,
-        o3d.geometry.KDTreeSearchParamHybrid(radius=radius_feature, max_nn=100))
+        o3d.geometry.KDTreeSearchParamHybrid(radius=radius_feature, max_nn=50))
 
     end = time.time()
 
@@ -168,7 +168,7 @@ def execute_global_registration(source_down, target_down, source_fpfh,
                 0.9),
             o3d.pipelines.registration.CorrespondenceCheckerBasedOnDistance(
                 distance_threshold)
-        ], o3d.pipelines.registration.RANSACConvergenceCriteria(100000000, 0.999))
+        ], o3d.pipelines.registration.RANSACConvergenceCriteria(10000000, 0.999))
 
     end = time.time()
 

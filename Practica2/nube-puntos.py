@@ -1,3 +1,4 @@
+import array
 from multiprocessing import shared_memory
 import re
 from tracemalloc import start
@@ -35,6 +36,7 @@ def draw_registration_result(source, target, transformation,tree):
         [k, idx, d] = tree.search_knn_vector_3d(p, 1)
         total_error = total_error + d[0]
         #print(idx)
+    print(f"k: {k}, idx: {idx}")
 
     return total_error/float(tam) 
 
@@ -203,9 +205,9 @@ pcd = o3d.io.read_point_cloud("clouds/scenes/snap_0point.pcd")
 #Primera iteracion
 
 start = time.time()
-plane_model, inliers = pcd.segment_plane(distance_threshold=0.05,
-                                         ransac_n=3,
-                                         num_iterations=1000)
+plane_model, inliers = pcd.segment_plane(distance_threshold=0.06,
+                                         ransac_n=5,
+                                         num_iterations=500)
 
 [a, b, c, d] = plane_model
 #print(f"Plane equation: {a:.2f}x + {b:.2f}y + {c:.2f}z + {d:.2f} = 0")
@@ -236,9 +238,9 @@ time1 = end-start
 #Segunda iteracion
 
 start = time.time()
-plane_model, inliers = pcd2.segment_plane(distance_threshold=0.05,
-                                         ransac_n=3,
-                                         num_iterations=1000)
+plane_model, inliers = pcd2.segment_plane(distance_threshold=0.06,
+                                         ransac_n=5,
+                                         num_iterations=500)
 
 [a, b, c, d] = plane_model
 #print(f"Plane equation: {a:.2f}x + {b:.2f}y + {c:.2f}z + {d:.2f} = 0")
@@ -267,9 +269,9 @@ time2 = end-start
 #Tercera iteracion
 
 start = time.time()
-plane_model, inliers = pcd3.segment_plane(distance_threshold=0.01,
-                                         ransac_n=3,
-                                         num_iterations=1000)
+plane_model, inliers = pcd3.segment_plane(distance_threshold=0.008,
+                                         ransac_n=5,
+                                         num_iterations=500)
 
 [a, b, c, d] = plane_model
 #print(f"Plane equation: {a:.2f}x + {b:.2f}y + {c:.2f}z + {d:.2f} = 0")
@@ -392,6 +394,8 @@ print(f"Total time of filtering: {total_time}")
 
 print(f"Fitness plc: {result_icp} en {time_ransac + time_icp}s.")
 print(f"Error plc= {error}\n\n")
+
+# uno = o3d.pipelines.registration.evaluate_registration(source_down, pcd, voxel_size, transformation=np.array([[1., 0., 0., 0.], [0., 1., 0., 0.], [0., 0., 1., 0.], [0., 0., 0., 1.]]))
 
 # error = draw_registration_result(source_down, pcd, result_ransac.transformation,pcd_tree)
 
